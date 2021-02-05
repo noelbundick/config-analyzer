@@ -33,8 +33,7 @@
       "text-summary",
       "html"
     ],
-    "sourceMap": true,
-    "instrument": true
+    "sourceMap": true
   },
   "devDependencies": {
     "@types/chai": "^4.2.14",
