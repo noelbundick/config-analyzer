@@ -1,3 +1,5 @@
-require: 'ts-node/register'
+require: 
+  - ts-node/register
+  - source-map-support/register
 full-trace: true
 spec: 'test/**/*.ts'

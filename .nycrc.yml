@@ -1,0 +1,7 @@
+extends: "@istanbuljs/nyc-config-typescript"
+
+reporter:
+  - clover
+  # for commandline outputs
+  - text
+report-dir: coverage
