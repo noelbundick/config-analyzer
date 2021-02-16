@@ -22,23 +22,8 @@
     "pretest": "npm run compile",
     "posttest": "npm run lint"
   },
-  "nyc": {
-    "include": [
-      "src/**/*.ts"
-    ],
-    "extension": [
-      ".ts"
-    ],
-    "require": [
-      "ts-node/register"
-    ],
-    "reporter": [
-      "text-summary",
-      "html"
-    ],
-    "sourceMap": true
-  },
   "devDependencies": {
+    "@istanbuljs/nyc-config-typescript": "^1.0.1",
     "@oclif/test": "^1.2.8",
     "@types/chai": "^4.2.14",
     "@types/mocha": "^8.2.0",
