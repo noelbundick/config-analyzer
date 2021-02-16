@@ -39,7 +39,7 @@
     "@oclif/command": "^1.8.0"
   },
   "oclif": {
-    "commands": "./src/commands",
+    "commands": "./build/src/commands",
     "bin": "aza"
   }
 }
