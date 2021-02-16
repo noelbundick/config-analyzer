@@ -1,5 +1,5 @@
 {
-  "name": "Config-Analyzer",
+  "name": "aza",
   "version": "0.0.0",
   "description": "",
   "main": "build/src/index.js",
@@ -7,6 +7,9 @@
   "files": [
     "build/src"
   ],
+  "bin": {
+    "aza": "./bin/run"
+  },
   "license": "MIT",
   "keywords": [],
   "scripts": {
@@ -51,6 +54,7 @@
     "@oclif/command": "^1.8.0"
   },
   "oclif": {
-    "commands": "./src/commands"
+    "commands": "./build/src/commands",
+    "bin": "aza"
   }
 }
