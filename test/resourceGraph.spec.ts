@@ -13,36 +13,49 @@ describe('Resource Graph client', function () {
   this.slow(3000);
   this.timeout(5000);
 
-  const runIntegrationTests = env.get(environment.runIntegrationTests).asBool();
-  const subscriptionId = env
-    .get(environment.subscriptionId)
-    .required(runIntegrationTests)
-    .asString();
+  let runIntegrationTests = false;
+  let subscriptionId = '';
+  let resourceClient: ResourceManagementClient;
 
   const resourceGroup = `aza-${Date.now()}`;
   const testRegion = 'westus2';
-
   const credential = new DefaultAzureCredential();
-  const adapter = new AzureIdentityCredentialAdapter(credential);
-  const resources = new ResourceManagementClient(adapter, subscriptionId);
 
   before(async function () {
     this.slow(60000);
     this.timeout(300000);
 
+    runIntegrationTests = env
+      .get(environment.runIntegrationTests)
+      .default('false')
+      .asBoolStrict();
+    subscriptionId = env
+      .get(environment.subscriptionId)
+      .required(runIntegrationTests)
+      .asString();
+
     if (!runIntegrationTests) {
       this.skip();
     }
 
-    await resources.resourceGroups.createOrUpdate(resourceGroup, {
+    resourceClient = new ResourceManagementClient(
+      new AzureIdentityCredentialAdapter(credential),
+      subscriptionId
+    );
+
+    await resourceClient.resourceGroups.createOrUpdate(resourceGroup, {
       location: testRegion,
     });
-    await resources.deployments.createOrUpdate(resourceGroup, resourceGroup, {
-      properties: {
-        mode: 'Incremental',
-        template: require('./templates/azuredeploy.json'),
-      },
-    });
+    await resourceClient.deployments.createOrUpdate(
+      resourceGroup,
+      resourceGroup,
+      {
+        properties: {
+          mode: 'Incremental',
+          template: require('./templates/azuredeploy.json'),
+        },
+      }
+    );
     await sleep(5000);
   });
 
@@ -51,7 +64,7 @@ describe('Resource Graph client', function () {
       return;
     }
 
-    await resources.resourceGroups.beginDeleteMethod(resourceGroup);
+    await resourceClient.resourceGroups.beginDeleteMethod(resourceGroup);
   });
 
   it('can execute queries', async () => {
