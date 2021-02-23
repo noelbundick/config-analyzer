@@ -1,9 +1,9 @@
-export interface RuleDefinition {
+export interface Rule {
   name: string;
   description: string;
-  resourceGraph?: ResourceGraphQueryDefinition;
+  resourceGraph?: ResourceGraphQuery;
 }
 
-export interface ResourceGraphQueryDefinition {
+export interface ResourceGraphQuery {
   query: string;
 }
