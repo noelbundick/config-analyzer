@@ -7,3 +7,12 @@ export interface Rule {
 export interface ResourceGraphQuery {
   query: string;
 }
+
+export interface RuleExecutor {
+  execute(): Promise<ScanResult>;
+}
+
+export interface ScanResult {
+  id: string;
+  ruleName: string;
+}
