@@ -13,6 +13,7 @@ export interface RuleExecutor {
 }
 
 export interface ScanResult {
-  id: string;
-  ruleName: string;
+    ruleName: string;
+    total: number;
+    ids: string[];
 }
