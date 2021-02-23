@@ -16,7 +16,7 @@ describe('Resource Graph client', function () {
   const runIntegrationTests = env.get(environment.runIntegrationTests).asBool();
   const subscriptionId = env
     .get(environment.subscriptionId)
-    .required()
+    .required(runIntegrationTests)
     .asString();
 
   const resourceGroup = `aza-${Date.now()}`;
