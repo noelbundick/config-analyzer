@@ -3,11 +3,12 @@ import {ResourceGraphQuery, ResourceGraphRule} from '../src/rules';
 import * as env from 'env-var';
 import {environment} from './constants';
 
-describe('Resource Graph Rule', () => {
-  let subscriptionId = '';
+describe('Resource Graph Rule', function () {
+  this.slow(3000);
+  let subscriptionId: string | undefined;
 
   before(function () {
-    subscriptionId = env.get(environment.subscriptionId).required().asString();
+    subscriptionId = env.get(environment.subscriptionId).asString();
 
     if (!subscriptionId) {
       this.skip();
@@ -29,7 +30,7 @@ describe('Resource Graph Rule', () => {
     const rgRule = new ResourceGraphRule(
       rule.name,
       rule.resourceGraph,
-      subscriptionId
+      subscriptionId || ''
     );
 
     const result = await rgRule.execute();
