@@ -5,11 +5,12 @@ import { AzureClient } from "./azure"
 export interface Rule {
   name: string;
   description: string;
-  resourceGraph?: ResourceGraphQuery;
+  resourceGraph?: ResourceGraphQuery
 }
 
-export interface ResourceGraphQuery {
-  query: string;
+export type ResourceGraphQuery = {
+    type: 'resourceGraph'
+    query: string
 }
 
 export interface RuleExecutor {
