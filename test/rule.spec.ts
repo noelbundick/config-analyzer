@@ -9,8 +9,16 @@ describe('Resource Graph Rule', function () {
   let subscriptionId: string;
 
   before(function () {
-    subscriptionId = env.get(environment.subscriptionId).asString() || '';
-    if (!subscriptionId) {
+    const runIntegrationTests = env
+      .get(environment.runIntegrationTests)
+      .default('false')
+      .asBoolStrict();
+    subscriptionId = env
+      .get(environment.subscriptionId)
+      .required(runIntegrationTests)
+      .asString();
+
+    if (!runIntegrationTests) {
       this.skip();
     }
   });
