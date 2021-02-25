@@ -2,12 +2,15 @@ import {ResourcesResponse} from '@azure/arm-resourcegraph/esm/models';
 import {DefaultAzureCredential} from '@azure/identity';
 import {AzureClient} from './azure';
 
-export type Rule = ResourceGraphRule;
+export type Rule = IResourceGraphRule;
 
 interface IRule {
   name: string;
   description: string;
   type: string;
+}
+
+interface IExecute {
   execute(): Promise<ScanResult>;
 }
 
@@ -28,7 +31,7 @@ interface ResourceGraphQueryResponseColumn {
   type: string | object;
 }
 
-export class ResourceGraphRule implements IResourceGraphRule {
+export class ResourceGraphRule implements IResourceGraphRule, IExecute {
   type: 'resourceGraph';
   name: string;
   description: string;
