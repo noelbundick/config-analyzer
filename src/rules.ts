@@ -4,7 +4,7 @@ import {AzureClient} from './azure';
 
 export type Rule = IResourceGraphRule;
 
-interface IRule {
+export interface IRuleData {
   name: string;
   description: string;
   type: string;
@@ -14,7 +14,7 @@ interface IExecute {
   execute(): Promise<ScanResult>;
 }
 
-interface IResourceGraphRule extends IRule {
+interface IResourceGraphRule extends IRuleData, IExecute {
   type: 'resourceGraph';
   query: string;
 }
@@ -31,7 +31,7 @@ interface ResourceGraphQueryResponseColumn {
   type: string | object;
 }
 
-export class ResourceGraphRule implements IResourceGraphRule, IExecute {
+export class ResourceGraphRule implements IResourceGraphRule {
   type: 'resourceGraph';
   name: string;
   description: string;
