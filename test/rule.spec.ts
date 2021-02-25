@@ -21,7 +21,7 @@ describe('Resource Graph Rule', function () {
     const name = 'Dummy Rule';
     const description = 'Intentional bad query';
     const rule: Rule = {name, query, description, type: 'resourceGraph'};
-    const rgr = new ResourceGraphRule(name, description, query, subscriptionId);
+    const rgr = new ResourceGraphRule(rule, subscriptionId);
     const result = await rgr.execute();
     assert.equal(rule.name, result.ruleName);
     assert.equal(rule.description, result.description);

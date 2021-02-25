@@ -38,16 +38,11 @@ export class ResourceGraphRule implements IResourceGraphRule, IExecute {
   query: string;
   subscriptionId: string;
 
-  constructor(
-    name: string,
-    description: string,
-    query: string,
-    subscriptionId: string
-  ) {
-    this.type = 'resourceGraph';
-    this.name = name;
-    this.description = description;
-    this.query = query;
+  constructor(rule: IResourceGraphRule, subscriptionId: string) {
+    this.type = rule.type;
+    this.name = rule.name;
+    this.description = rule.description;
+    this.query = rule.query;
     this.subscriptionId = subscriptionId;
   }
 
