@@ -1,11 +1,11 @@
 import {assert} from 'chai';
-import {ResourceGraphRule} from '../src/rules';
+import {ResourceGraphRule, Rule} from '../src/rules';
 import * as env from 'env-var';
 import {environment} from './constants';
 
 describe('Resource Graph Rule', function () {
-  this.slow(3000);
-  this.timeout(5000);
+  this.slow(4000);
+  this.timeout(7000);
   let subscriptionId: string;
 
   before(function () {
@@ -20,14 +20,9 @@ describe('Resource Graph Rule', function () {
       "Resources | where type =~ 'Microsoft.Compute/virtualMachines2'";
     const name = 'Dummy Rule';
     const description = 'Intentional bad query';
-    const rule = new ResourceGraphRule(
-      name,
-      description,
-      query,
-      subscriptionId
-    );
-
-    const result = await rule.execute();
+    const rule: Rule = {name, query, description, type: 'resourceGraph'};
+    const rgr = new ResourceGraphRule(name, description, query, subscriptionId);
+    const result = await rgr.execute();
     assert.equal(rule.name, result.ruleName);
     assert.equal(rule.description, result.description);
     assert.containsAllKeys(result, ['ruleName', 'description', 'total', 'ids']);
