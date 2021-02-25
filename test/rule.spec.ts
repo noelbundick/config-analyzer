@@ -7,7 +7,6 @@ describe('Resource Graph Rule', function () {
   this.slow(5000);
   this.timeout(8000);
   let subscriptionId: string;
-  subscriptionId = env.get(environment.subscriptionId).required().asString();
 
   before(function () {
     const runIntegrationTests = env
