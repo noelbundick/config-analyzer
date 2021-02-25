@@ -22,10 +22,18 @@ describe('Resource Graph Rule', function () {
     const description = 'Intentional bad query';
     const rule: Rule = {name, query, description, type: 'resourceGraph'};
     const rgr = new ResourceGraphRule(rule, subscriptionId);
-    const result = await rgr.execute();
+    const result = await rgr.execute().catch(err => {
+      return {
+        err,
+        ruleName: rgr.name,
+        description,
+        total: 0,
+        ids: [],
+      };
+    });
     assert.equal(rule.name, result.ruleName);
     assert.equal(rule.description, result.description);
     assert.containsAllKeys(result, ['ruleName', 'description', 'total', 'ids']);
-    assert.equal(result.total, result.ids.length);
+    assert.equal(result.total, 0);
   });
 });
