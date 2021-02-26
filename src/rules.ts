@@ -1,20 +1,21 @@
-import {ResourcesResponse} from '@azure/arm-resourcegraph/esm/models';
+import {ResourceGraphModels} from '@azure/arm-resourcegraph';
 import {DefaultAzureCredential} from '@azure/identity';
 import {AzureClient} from './azure';
 
-export type Rule = ResourceGraphRule;
+export type RuleSchema = ResourceGraphRuleSchema;
+export type RuleExecutor = ResourceGraphRule;
 
-export interface IRule {
+interface BaseRuleSchema {
   name: string;
   description: string;
   type: string;
 }
 
-interface IExecute {
+interface Execute {
   execute(): Promise<ScanResult>;
 }
 
-export interface IResourceGraphRule extends IRule {
+interface ResourceGraphRuleSchema extends BaseRuleSchema {
   type: 'resourceGraph';
   query: string;
 }
@@ -31,14 +32,14 @@ interface ResourceGraphQueryResponseColumn {
   type: string | object;
 }
 
-export class ResourceGraphRule implements IResourceGraphRule, IExecute {
+export class ResourceGraphRule implements Execute {
   type: 'resourceGraph';
   name: string;
   description: string;
   query: string;
   subscriptionId: string;
 
-  constructor(rule: IResourceGraphRule, subscriptionId: string) {
+  constructor(rule: ResourceGraphRuleSchema, subscriptionId: string) {
     this.type = rule.type;
     this.name = rule.name;
     this.description = rule.description;
@@ -55,7 +56,7 @@ export class ResourceGraphRule implements IResourceGraphRule, IExecute {
     return this.toScanResult(resources);
   }
 
-  private toScanResult(response: ResourcesResponse) {
+  private toScanResult(response: ResourceGraphModels.ResourcesResponse) {
     const cols = response.data.columns as ResourceGraphQueryResponseColumn[];
     const rows = response.data.rows as string[];
     const idIndex = cols.findIndex(c => c.name === 'id');

@@ -1,5 +1,5 @@
 import {assert} from 'chai';
-import {IResourceGraphRule, ResourceGraphRule} from '../src/rules';
+import {RuleSchema, ResourceGraphRule} from '../src/rules';
 import * as env from 'env-var';
 import {environment} from './constants';
 
@@ -28,25 +28,27 @@ describe('Resource Graph Rule', function () {
       "Resources | where type =~ 'Microsoft.Compute/virtualMachines2'";
     const name = 'Dummy Rule';
     const description = 'Intentional bad query';
-    const rule: IResourceGraphRule = {
+    const rule: RuleSchema = {
       name,
       query,
       description,
       type: 'resourceGraph',
     };
     const rgr = new ResourceGraphRule(rule, subscriptionId);
-    const result = await rgr.execute().catch(err => {
-      return {
-        err,
-        ruleName: rgr.name,
-        description,
-        total: 0,
-        ids: [],
-      };
-    });
-    assert.equal(rule.name, result.ruleName);
-    assert.equal(rule.description, result.description);
-    assert.containsAllKeys(result, ['ruleName', 'description', 'total', 'ids']);
-    assert.equal(result.total, 0);
+
+    try {
+      const result = await rgr.execute();
+      assert.equal(rule.name, result.ruleName);
+      assert.equal(rule.description, result.description);
+      assert.containsAllKeys(result, [
+        'ruleName',
+        'description',
+        'total',
+        'ids',
+      ]);
+      assert.equal(result.total, 0);
+    } catch (err) {
+      throw new Error('Could not execute the rule');
+    }
   });
 });
