@@ -1,30 +1,12 @@
 import {ResourceGraphModels} from '@azure/arm-resourcegraph';
 import {DefaultAzureCredential} from '@azure/identity';
 import {AzureClient} from './azure';
+import {RuleSchema, ScanResult} from './scanner';
 
-export type RuleSchema = ResourceGraphRuleSchema;
-export type RuleExecutor = ResourceGraphRule;
-
-interface BaseRuleSchema {
-  name: string;
-  description: string;
-  type: string;
-}
+export type Rule = ResourceGraphRule;
 
 interface Execute {
   execute(): Promise<ScanResult>;
-}
-
-interface ResourceGraphRuleSchema extends BaseRuleSchema {
-  type: 'resourceGraph';
-  query: string;
-}
-
-export interface ScanResult {
-  ruleName: string;
-  description: string;
-  total: number;
-  ids: string[];
 }
 
 interface ResourceGraphQueryResponseColumn {
@@ -33,14 +15,13 @@ interface ResourceGraphQueryResponseColumn {
 }
 
 export class ResourceGraphRule implements Execute {
-  type: 'resourceGraph';
+  static type: 'resourceGraph';
   name: string;
   description: string;
   query: string;
   subscriptionId: string;
 
-  constructor(rule: ResourceGraphRuleSchema, subscriptionId: string) {
-    this.type = rule.type;
+  constructor(rule: RuleSchema, subscriptionId: string) {
     this.name = rule.name;
     this.description = rule.description;
     this.query = rule.query;
