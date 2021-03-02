@@ -16,7 +16,10 @@
   },
   "keywords": [],
   "scripts": {
-    "test": "nyc mocha",
+    "test": "nyc mocha test/unit/**/*.spec.ts",
+    "test:azure": "nyc mocha test/azure/**/*.spec.ts",
+    "test:azure:provision": "ts-node -r dotenv/config test/azure/provision.ts provision",
+    "test:azure:teardown": "ts-node -r dotenv/config test/azure/provision.ts teardown",
     "lint": "gts lint",
     "clean": "gts clean",
     "compile": "tsc",

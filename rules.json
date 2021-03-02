@@ -1,0 +1,14 @@
+[
+  {
+    "name": "Mock Rule - Get VMs",
+    "description": "Get all virtual Machines in a subscription",
+    "type": "resourceGraph",
+    "query": "Resources | where type =~ 'Microsoft.Compute/virtualMachines'"
+  },
+  {
+    "name": "Mock Rule - Get Storage Accounts",
+    "description": "Get all storage accounts in a subscription",
+    "type": "resourceGraph",
+    "query": "Resources | where type =~ 'Microsoft.Storage/storageAccounts'"
+  }
+]
