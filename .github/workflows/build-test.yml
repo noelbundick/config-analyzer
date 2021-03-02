@@ -8,27 +8,69 @@ on:
 
 jobs: 
   build: 
-
     runs-on: ubuntu-latest
 
     steps: 
-    - uses: actions/checkout@v2
+    - name: Checkout
+      uses: actions/checkout@v2
 
     - name: Use Node.js 14.x
       uses: actions/setup-node@v1
       with: 
         node-version: '14.x'
-    - uses: actions/cache@v2
+
+    - name: Restore npm cache
+      uses: actions/cache@v2
       with:
         path: ~/.npm
         key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
         restore-keys: |
           ${{ runner.os }}-node-
 
-    - run: npm ci
-    - run: npm test
+    - name: Install dependencies and compile
+      run: npm ci
+
+    - name: Run unit tests
+      run: npm test
 
     - name: Upload coverage to Codecov  
       uses: codecov/codecov-action@v1
       with: 
         directory: ./coverage
+
+    - name: Restore pkg cache
+      uses: actions/cache@v2
+      with:
+        path: ~/.pkg-cache
+        key: pkg-${{ hashFiles('**/package.json') }}
+        restore-keys: |
+          pkg-
+
+    - name: Create standalone executables
+      run: |
+        npm ci --production --ignore-scripts
+        npm i -g pkg
+        npm run package
+        
+        mkdir dist/linux dist/win dist/mac
+        mv dist/aza-linux dist/linux/aza
+        mv dist/aza-win.exe dist/win/aza.exe
+        mv dist/aza-macos dist/mac/aza
+
+    - name: Upload artifacts (Linux)
+      uses: actions/upload-artifact@v2
+      with:
+        name: linux
+        path: dist/linux
+
+    - name: Upload artifacts (Windows)
+      uses: actions/upload-artifact@v2
+      with:
+        name: win
+        path: dist/win
+
+    - name: Upload artifacts (MacOS)
+      uses: actions/upload-artifact@v2
+      with:
+        name: mac
+        path: dist/mac
