@@ -8,27 +8,49 @@ on:
 
 jobs: 
   build: 
-
     runs-on: ubuntu-latest
 
     steps: 
-    - uses: actions/checkout@v2
+    - name: Checkout
+      uses: actions/checkout@v2
 
     - name: Use Node.js 14.x
       uses: actions/setup-node@v1
       with: 
         node-version: '14.x'
-    - uses: actions/cache@v2
+
+    - name: Restore npm cache
+      uses: actions/cache@v2
       with:
         path: ~/.npm
         key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
         restore-keys: |
           ${{ runner.os }}-node-
 
-    - run: npm ci
-    - run: npm test
+    - name: Install dependencies and compile
+      run: npm ci
+
+    - name: Run unit tests
+      run: npm test
 
     - name: Upload coverage to Codecov  
       uses: codecov/codecov-action@v1
       with: 
         directory: ./coverage
+
+    - name: Restore pkg cache
+      uses: actions/cache@v2
+      with:
+        path: ~/.pkg-cache
+        key: pkg-${{ hashFiles('**/package.json') }}
+        restore-keys: |
+          pkg-
+
+    - name: Create standalone executables
+      run: npm run package
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: dist
+        path: dist
