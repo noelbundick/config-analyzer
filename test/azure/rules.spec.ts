@@ -1,7 +1,7 @@
 import {assert} from 'chai';
 import {ResourceGraphRule} from '../../src/rules';
 import {RuleSchema} from '../../src/scanner';
-import {subscriptionId} from './hooks';
+import {subscriptionId} from '.';
 
 describe('Resource Graph Rule', function () {
   this.slow(5000);

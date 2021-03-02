@@ -1,1 +1,0 @@
-[{"name":"Mock Rule - Intentional Bad Query ","description":"Should return no results","type":"resourceGraph","query":"Resources | where type =~ 'Microsoft.Network/virtualNetworks2'"}]

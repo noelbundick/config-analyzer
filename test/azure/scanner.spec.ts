@@ -1,6 +1,6 @@
 import {assert} from 'chai';
 import {Scanner} from '../../src/scanner';
-import {subscriptionId} from './hooks';
+import {subscriptionId} from '.';
 
 describe('Scanner', function () {
   this.slow(5000);
@@ -11,7 +11,7 @@ describe('Scanner', function () {
       const results = await scanner.scan(
         'resourceGraph',
         subscriptionId,
-        '../mockRules.json'
+        '../test/rules.json'
       );
       results.forEach(r => {
         assert.containsAllKeys(r, ['ruleName', 'description', 'total', 'ids']);

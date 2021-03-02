@@ -1,6 +1,6 @@
 import {AzureClient} from '../../src/azure';
 import {assert} from 'chai';
-import {credential, resourceGroup, subscriptionId} from './hooks';
+import {credential, resourceGroup, subscriptionId} from '.';
 
 describe('Resource Graph client', function () {
   this.slow(3000);

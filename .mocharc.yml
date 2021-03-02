@@ -3,4 +3,3 @@ require:
   - source-map-support/register
   - 'dotenv/config'
 full-trace: true
-spec: 'test/**/*.spec.ts'
