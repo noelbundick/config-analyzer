@@ -47,10 +47,12 @@ jobs:
           pkg-
 
     - name: Create standalone executables
-      run: npm run package
-    - name: Rename executables
       run: |
-        mkdir dist/linux dist/win dist/macos
+        npm ci --production --ignore-scripts
+        npm i -g pkg
+        npm run package
+        
+        mkdir dist/linux dist/win dist/mac
         mv dist/aza-linux dist/linux/aza
         mv dist/aza-win.exe dist/win/aza.exe
         mv dist/aza-macos dist/mac/aza
