@@ -49,8 +49,20 @@ jobs:
     - name: Create standalone executables
       run: npm run package
 
-    - name: Upload build artifacts
+    - name: Upload artifacts (Linux)
       uses: actions/upload-artifact@v2
       with:
-        name: dist
-        path: dist
+        name: dist/*linux
+        path: linux
+
+    - name: Upload artifacts (Windows)
+      uses: actions/upload-artifact@v2
+      with:
+        name: dist/*macos
+        path: mac
+
+    - name: Upload artifacts (MacOS)
+      uses: actions/upload-artifact@v2
+      with:
+        name: dist/*win.exe
+        path: win
