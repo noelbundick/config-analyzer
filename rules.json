@@ -10,5 +10,11 @@
     "description": "Get all storage accounts in a subscription",
     "type": "resourceGraph",
     "query": "Resources | where type =~ 'Microsoft.Storage/storageAccounts'"
+  },
+  {
+    "name": "Dummy Mock Rule",
+    "description": "Mocks a multiple rule system",
+    "type": "dummy",
+    "context": {"message": "I don't do anything"}
   }
 ]

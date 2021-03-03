@@ -1,5 +1,5 @@
 import {ResourceGraphRule, Rule, DummyRule} from './rules';
-import * as fs from 'fs';
+import {promises as fsPromises} from 'fs';
 import * as path from 'path';
 
 export interface ScanResult {
@@ -10,19 +10,18 @@ export interface ScanResult {
 }
 
 export class Scanner {
-  _rules: Rule[] = [];
+  private _rules: Rule[] = [];
 
   async scan(ruleType: Rule['type'], target: string) {
-    if (!this._rules.length) this.loadRulesFromFile();
+    if (!this._rules.length) await this.loadRulesFromFile();
     const results = this._executeRules(ruleType, target);
     return await Promise.all(results);
   }
 
-  loadRulesFromFile(filePath = '../rules.json') {
+  async loadRulesFromFile(filePath = '../../rules.json') {
     const absPath = path.join(__dirname, filePath);
-    const data = fs.readFileSync(absPath, 'utf8');
-    const rules: Rule[] = JSON.parse(data);
-    return rules;
+    const data = await fsPromises.readFile(absPath, 'utf8');
+    this._rules = JSON.parse(data);
   }
 
   private _executeRules(type: Rule['type'], target: string) {
