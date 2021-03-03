@@ -11,24 +11,27 @@ interface BaseRule {
   type: string;
 }
 
-interface IResourceGraphRule extends BaseRule {
+export interface IResourceGraphRule extends BaseRule {
   type: 'resourceGraph';
   query: string;
 }
 
-interface IDummyRule extends BaseRule {
+export interface IDummyRule extends BaseRule {
   type: 'dummy';
   context: object;
 }
 
 export class DummyRule {
-  static execute(rule: IDummyRule): Promise<ScanResult> {
-    return Promise.resolve({
-      ruleName: rule.name,
-      description: rule.description,
-      total: 0,
-      ids: [],
+  static execute(rules: IDummyRule[]) {
+    const results = rules.map(r => {
+      return Promise.resolve({
+        ruleName: r.name,
+        description: r.description,
+        total: 0,
+        ids: [],
+      }) as Promise<ScanResult>;
     });
+    return Promise.all(results);
   }
 }
 
@@ -38,11 +41,14 @@ interface ResourceGraphQueryResponseColumn {
 }
 
 export class ResourceGraphRule {
-  static async execute(rule: IResourceGraphRule, subscriptionId: string) {
+  static async execute(rules: IResourceGraphRule[], subscriptionId: string) {
     const credential = new DefaultAzureCredential();
     const client = new AzureClient(credential);
-    const resources = await client.queryResources(rule.query, [subscriptionId]);
-    return this._toScanResult(resources, rule);
+    const results = rules.map(async r => {
+      const resources = await client.queryResources(r.query, [subscriptionId]);
+      return this._toScanResult(resources, r);
+    });
+    return Promise.all(results);
   }
 
   private static _toScanResult(

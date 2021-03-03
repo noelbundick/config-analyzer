@@ -17,10 +17,17 @@ describe('Resource Graph Rule', function () {
       description,
       type: 'resourceGraph',
     };
-    const result = await ResourceGraphRule.execute(rule, subscriptionId);
-    assert.equal(rule.name, result.ruleName);
-    assert.equal(rule.description, result.description);
-    assert.containsAllKeys(result, ['ruleName', 'description', 'total', 'ids']);
-    assert.equal(result.total, 0);
+    const results = await ResourceGraphRule.execute([rule], subscriptionId);
+    for (const result of results) {
+      assert.equal(rule.name, result.ruleName);
+      assert.equal(rule.description, result.description);
+      assert.containsAllKeys(result, [
+        'ruleName',
+        'description',
+        'total',
+        'ids',
+      ]);
+      assert.equal(result.total, 0);
+    }
   });
 });
