@@ -4,5 +4,17 @@
     "description": "Should return no results",
     "type": "resourceGraph",
     "query": "Resources | where type =~ 'Microsoft.Network/virtualNetworks2'"
+  },
+  {
+    "name": "Mock Dummy Rule",
+    "description": "mocks a multiple rule system",
+    "type": "dummy",
+    "context": {}
+  },
+  {
+    "name": "Mock Dummy Rule 2",
+    "description": "mocks a multiple rule system",
+    "type": "dummy",
+    "context": {}
   }
 ]

@@ -1,5 +1,11 @@
-import {ResourceGraphRule, Rule} from './rules';
-import * as fs from 'fs';
+import {
+  ResourceGraphRule,
+  IResourceGraphRule,
+  Rule,
+  DummyRule,
+  IDummyRule,
+} from './rules';
+import {promises as fsPromises} from 'fs';
 import * as path from 'path';
 
 export interface ScanResult {
@@ -9,50 +15,32 @@ export interface ScanResult {
   ids: string[];
 }
 
-export type RuleSchema = ResourceGraphRuleSchema;
-
-interface BaseRuleSchema {
-  name: string;
-  description: string;
-  type: string;
-}
-
-interface ResourceGraphRuleSchema extends BaseRuleSchema {
-  type: 'resourceGraph';
-  query: string;
-}
-
 export class Scanner {
-  // filePath was added for testing purposes
-  async scan(queryType: RuleSchema['type'], target: string, filePath?: string) {
-    const rules = this.makeRules(queryType, target, filePath);
-    return Promise.all(rules.map(r => r.execute()));
+  private _rules: Rule[] = [];
+
+  async scan(ruleType: Rule['type'], target: string) {
+    if (!this._rules.length) await this.loadRulesFromFile();
+    return this._executeRules(ruleType, target);
   }
 
-  private loadRuleData(file = '../../rules.json') {
-    // filePath will eventually be replaced with a url
-    const filePath = path.join(__dirname, file);
-    const data = fs.readFileSync(filePath, 'utf8');
-    const rules: RuleSchema[] = JSON.parse(data);
-    return rules;
+  async loadRulesFromFile(filePath = '../../rules.json') {
+    const absPath = path.join(__dirname, filePath);
+    const data = await fsPromises.readFile(absPath, 'utf8');
+    this._rules = JSON.parse(data);
   }
 
-  private makeRules(
-    queryType: RuleSchema['type'],
-    target: string,
-    filePath?: string
-  ) {
-    const ruleData = this.loadRuleData(filePath);
-    const rules: Rule[] = [];
-    for (const r of ruleData) {
-      switch (queryType) {
-        case 'resourceGraph':
-          if (r.type === 'resourceGraph') {
-            rules.push(new ResourceGraphRule(r, target));
-          }
-          break;
+  private _executeRules(type: Rule['type'], target: string) {
+    const filteredRules = this._rules.filter(r => r.type === type);
+    switch (type) {
+      case 'resourceGraph': {
+        return ResourceGraphRule.execute(
+          filteredRules as IResourceGraphRule[],
+          target
+        );
+      }
+      case 'dummy': {
+        return DummyRule.execute(filteredRules as IDummyRule[]);
       }
     }
-    return rules;
   }
 }

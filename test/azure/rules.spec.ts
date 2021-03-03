@@ -1,6 +1,5 @@
 import {assert} from 'chai';
-import {ResourceGraphRule} from '../../src/rules';
-import {RuleSchema} from '../../src/scanner';
+import {Rule, ResourceGraphRule} from '../../src/rules';
 import {subscriptionId} from '.';
 
 describe('Resource Graph Rule', function () {
@@ -12,16 +11,14 @@ describe('Resource Graph Rule', function () {
       "Resources | where type =~ 'Microsoft.Compute/virtualMachines2'";
     const name = 'Dummy Rule';
     const description = 'Intentional bad query';
-    const rule: RuleSchema = {
+    const rule: Rule = {
       name,
       query,
       description,
       type: 'resourceGraph',
     };
-    const rgr = new ResourceGraphRule(rule, subscriptionId);
-
-    try {
-      const result = await rgr.execute();
+    const results = await ResourceGraphRule.execute([rule], subscriptionId);
+    for (const result of results) {
       assert.equal(rule.name, result.ruleName);
       assert.equal(rule.description, result.description);
       assert.containsAllKeys(result, [
@@ -31,8 +28,6 @@ describe('Resource Graph Rule', function () {
         'ids',
       ]);
       assert.equal(result.total, 0);
-    } catch (err) {
-      throw new Error(err);
     }
   });
 });

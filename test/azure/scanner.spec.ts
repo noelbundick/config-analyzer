@@ -7,18 +7,18 @@ describe('Scanner', function () {
   this.timeout(8000);
   it('can load and execute resource graph rules from a JSON file', async () => {
     const scanner = new Scanner();
-    try {
-      const results = await scanner.scan(
-        'resourceGraph',
-        subscriptionId,
-        '../test/rules.json'
-      );
-      results.forEach(r => {
-        assert.containsAllKeys(r, ['ruleName', 'description', 'total', 'ids']);
-        assert.equal(r.total, 0);
-      });
-    } catch (err) {
-      throw new Error(err);
-    }
+    await scanner.loadRulesFromFile('../test/rules.json');
+    const rgResults = await scanner.scan('resourceGraph', subscriptionId);
+    assert.equal(rgResults.length, 1);
+    rgResults.forEach(r => {
+      assert.containsAllKeys(r, ['ruleName', 'description', 'total', 'ids']);
+      assert.equal(r.total, 0);
+    });
+    const dummyResults = await scanner.scan('dummy', '');
+    assert.equal(dummyResults.length, 2);
+    dummyResults.forEach(r => {
+      assert.containsAllKeys(r, ['ruleName', 'description', 'total', 'ids']);
+      assert.equal(r.total, 0);
+    });
   });
 });
