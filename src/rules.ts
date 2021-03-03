@@ -1,12 +1,35 @@
 import {ResourceGraphModels} from '@azure/arm-resourcegraph';
 import {DefaultAzureCredential} from '@azure/identity';
 import {AzureClient} from './azure';
-import {RuleSchema, ScanResult} from './scanner';
+import {ScanResult} from './scanner';
 
-export type Rule = ResourceGraphRule;
+export type Rule = IResourceGraphRule | IDummyRule;
 
-interface Execute {
-  execute(): Promise<ScanResult>;
+interface BaseRule {
+  name: string;
+  description: string;
+  type: string;
+}
+
+interface IResourceGraphRule extends BaseRule {
+  type: 'resourceGraph';
+  query: string;
+}
+
+interface IDummyRule extends BaseRule {
+  type: 'dummy';
+  context: object;
+}
+
+export class DummyRule {
+  static execute(rule: IDummyRule): Promise<ScanResult> {
+    return Promise.resolve({
+      ruleName: rule.name,
+      description: rule.description,
+      total: 0,
+      ids: [],
+    });
+  }
 }
 
 interface ResourceGraphQueryResponseColumn {
@@ -14,37 +37,25 @@ interface ResourceGraphQueryResponseColumn {
   type: string | object;
 }
 
-export class ResourceGraphRule implements Execute {
-  static type: 'resourceGraph';
-  name: string;
-  description: string;
-  query: string;
-  subscriptionId: string;
-
-  constructor(rule: RuleSchema, subscriptionId: string) {
-    this.name = rule.name;
-    this.description = rule.description;
-    this.query = rule.query;
-    this.subscriptionId = subscriptionId;
-  }
-
-  async execute() {
+export class ResourceGraphRule {
+  static async execute(rule: IResourceGraphRule, subscriptionId: string) {
     const credential = new DefaultAzureCredential();
     const client = new AzureClient(credential);
-    const resources = await client.queryResources(this.query, [
-      this.subscriptionId,
-    ]);
-    return this.toScanResult(resources);
+    const resources = await client.queryResources(rule.query, [subscriptionId]);
+    return this._toScanResult(resources, rule);
   }
 
-  private toScanResult(response: ResourceGraphModels.ResourcesResponse) {
+  private static _toScanResult(
+    response: ResourceGraphModels.ResourcesResponse,
+    rule: IResourceGraphRule
+  ): ScanResult {
     const cols = response.data.columns as ResourceGraphQueryResponseColumn[];
     const rows = response.data.rows as string[];
     const idIndex = cols.findIndex(c => c.name === 'id');
     const resourceIds = rows.map(r => r[idIndex]);
     const scanResult = {
-      ruleName: this.name,
-      description: this.description,
+      ruleName: rule.name,
+      description: rule.description,
       total: response.totalRecords,
       ids: resourceIds,
     };
