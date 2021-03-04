@@ -18,19 +18,27 @@ export interface ScanResult {
 export class Scanner {
   private _rules: Rule[] = [];
 
-  async scan(ruleType: Rule['type'], target: string) {
+  async scan(ruleType: Rule['type'], target: string, ruleNames?: string[]) {
     if (!this._rules.length) await this.loadRulesFromFile();
-    return this._executeRules(ruleType, target);
+    if (ruleNames) this._rules.filter(r => ruleNames.includes(r.name));
+    return this._executeRules(ruleType, target, ruleNames);
   }
 
-  async loadRulesFromFile(filePath = '../../rules.json') {
+  async loadRulesFromFile(filePath = '../rules.json') {
     const absPath = path.join(__dirname, filePath);
     const data = await fsPromises.readFile(absPath, 'utf8');
     this._rules = JSON.parse(data);
   }
 
-  private _executeRules(type: Rule['type'], target: string) {
-    const filteredRules = this._rules.filter(r => r.type === type);
+  private _executeRules(
+    type: Rule['type'],
+    target: string,
+    ruleNames?: string[]
+  ) {
+    let filteredRules = this._rules.filter(r => r.type === type);
+    if (ruleNames) {
+      filteredRules = filteredRules.filter(r => ruleNames.includes(r.name));
+    }
     switch (type) {
       case 'resourceGraph': {
         return ResourceGraphRule.execute(
