@@ -1,5 +1,6 @@
 import {Command, flags} from '@oclif/command';
 import {Scanner, ScanResult} from '../scanner';
+import cli from 'cli-ux';
 
 export default class Scan extends Command {
   static description =
@@ -30,8 +31,7 @@ export default class Scan extends Command {
     this.log('Resource Ids: ' + r.ids);
   }
 
-  async catch(err: any) {
-    console.log(err);
+  async catch(err: Error) {
     throw err;
   }
 
