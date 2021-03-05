@@ -1,5 +1,5 @@
 import {Command, flags} from '@oclif/command';
-import {Id, Scanner, ScanResult} from '../scanner';
+import {Scanner, ScanResult} from '../scanner';
 import cli from 'cli-ux';
 import {RuleContext} from '../rules';
 
@@ -50,7 +50,7 @@ Resource IDs ([total]):
     return {
       resources: {
         header: `Resource IDs (${total}):`,
-        get: (resource: Id) => resource.id,
+        get: (resource: {id: string}) => resource.id,
       },
     };
   }
@@ -91,12 +91,12 @@ Resource IDs ([total]):
     ruleNames?: string[]
   ) {
     const scanner = new Scanner();
-    const ruleObj = await scanner.getRulesFromFile(ruleType);
+    const ruleContext = await scanner.getRulesFromFile(ruleType);
     if (ruleNames) {
       // handle this
     }
     cli.action.start('Scanning');
-    const results = await scanner.scan(ruleObj, scope);
+    const results = await scanner.scan(ruleContext, scope);
     cli.action.stop();
     this.print(results);
   }

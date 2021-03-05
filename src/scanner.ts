@@ -6,27 +6,27 @@ export interface ScanResult {
   ruleName: string;
   description: string;
   total: number;
-  resources: Id[];
+  resources: {id: string}[];
 }
 
-export interface Id {
-  id: string;
-}
+// export interface Id {
+//   id: string;
+// }
 
 export class Scanner {
-  async scan(ruleObj: RuleContext, target: string) {
-    switch (ruleObj.type) {
+  async scan(context: RuleContext, target: string) {
+    switch (context.type) {
       case 'resourceGraph': {
-        return ResourceGraphRule.execute(ruleObj.rules, target);
+        return ResourceGraphRule.execute(context.rules, target);
       }
       case 'dummy': {
-        return DummyRule.execute(ruleObj.rules);
+        return DummyRule.execute(context.rules);
       }
     }
   }
 
-  filterRules(type: RuleContext['type'], RuleContexts: RuleContext[]) {
-    return RuleContexts.filter(r => r.type === type)[0];
+  filterRules(type: RuleContext['type'], context: RuleContext[]) {
+    return context.filter(r => r.type === type)[0];
   }
 
   async getRulesFromFile(
