@@ -1,5 +1,5 @@
 import {assert} from 'chai';
-import {Rule, ResourceGraphRule} from '../../src/rules';
+import {Rule, ResourceGraphRule, RuleContext} from '../../src/rules';
 import {subscriptionId} from '.';
 
 describe('Resource Graph Rule', function () {
@@ -11,12 +11,17 @@ describe('Resource Graph Rule', function () {
       "Resources | where type =~ 'Microsoft.Compute/virtualMachines2'";
     const name = 'Dummy Rule';
     const description = 'Intentional bad query';
-    const rule: Rule = {
+    const rule = {
       name,
-      query,
       description,
+      query,
     };
-    const results = await ResourceGraphRule.execute([rule], subscriptionId);
+    const context: RuleContext = {
+      type: 'resourceGraph',
+      subscriptionId,
+      rules: [rule],
+    };
+    const results = await ResourceGraphRule.execute(context);
     for (const result of results) {
       assert.equal(rule.name, result.ruleName);
       assert.equal(rule.description, result.description);

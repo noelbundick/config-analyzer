@@ -21,6 +21,11 @@
         "name": "dummy-rule",
         "description": "Mocks a multiple rule system",
         "context": {"message": "I don't do anything"}
+      },
+      {
+        "name": "dummy-rule",
+        "description": "Mocks a multiple rule system",
+        "context": {"message": "I don't do anything"}
       }
     ]
   }

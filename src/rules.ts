@@ -7,38 +7,46 @@ export type Rule = IResourceGraphRule | IDummyRule;
 
 export type RuleContext = ResourceGraphRuleContext | DummyRuleContext;
 
-interface ResourceGraphRuleContext {
+interface IRuleContext {
+  type: string;
+  rules: Rule[];
+}
+
+interface ResourceGraphRuleContext extends IRuleContext {
   type: 'resourceGraph';
+  subscriptionId: string;
   rules: IResourceGraphRule[];
 }
 
-interface DummyRuleContext {
+interface DummyRuleContext extends IRuleContext {
   type: 'dummy';
+  target: object;
   rules: IDummyRule[];
 }
 
-interface BaseRule {
+interface IRule {
   name: string;
   description: string;
 }
 
-interface IResourceGraphRule extends BaseRule {
+interface IResourceGraphRule extends IRule {
   query: string;
 }
 
-interface IDummyRule extends BaseRule {
+interface IDummyRule extends IRule {
   context: object;
 }
 
 export class DummyRule {
-  static execute(rules: IDummyRule[]) {
-    const results = rules.map(r => {
-      return Promise.resolve({
+  static async execute(context: DummyRuleContext) {
+    const results = context.rules.map(async r => {
+      const result: Promise<ScanResult> = Promise.resolve({
         ruleName: r.name,
         description: r.description,
         total: 0,
         resources: [],
-      }) as Promise<ScanResult>;
+      });
+      return result;
     });
     return Promise.all(results);
   }
@@ -50,11 +58,13 @@ interface ResourceGraphQueryResponseColumn {
 }
 
 export class ResourceGraphRule {
-  static async execute(rules: IResourceGraphRule[], subscriptionId: string) {
+  static async execute(context: ResourceGraphRuleContext) {
     const credential = new DefaultAzureCredential();
     const client = new AzureClient(credential);
-    const results = rules.map(async r => {
-      const resources = await client.queryResources(r.query, [subscriptionId]);
+    const results = context.rules.map(async r => {
+      const resources = await client.queryResources(r.query, [
+        context.subscriptionId,
+      ]);
       return this._toScanResult(resources, r);
     });
     return Promise.all(results);

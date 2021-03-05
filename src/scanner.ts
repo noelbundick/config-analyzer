@@ -10,13 +10,15 @@ export interface ScanResult {
 }
 
 export class Scanner {
-  async scan(context: RuleContext, target: string) {
+  async scan(context: RuleContext, target: string | object) {
     switch (context.type) {
       case 'resourceGraph': {
-        return ResourceGraphRule.execute(context.rules, target);
+        context.subscriptionId = target as string;
+        return ResourceGraphRule.execute(context);
       }
       case 'dummy': {
-        return DummyRule.execute(context.rules);
+        context.target = target as object;
+        return DummyRule.execute(context);
       }
     }
   }

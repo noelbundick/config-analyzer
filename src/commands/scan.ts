@@ -1,7 +1,7 @@
 import {Command, flags} from '@oclif/command';
 import {Scanner, ScanResult} from '../scanner';
 import cli from 'cli-ux';
-import {RuleContext, Rule} from '../rules';
+import {RuleContext} from '../rules';
 import chalk = require('chalk');
 
 export default class Scan extends Command {
@@ -30,15 +30,7 @@ export default class Scan extends Command {
     }),
   };
 
-  private totalRulesPassed(results: ScanResult[]) {
-    const totals: number[] = results.map(r => {
-      if (r.total === 0) return 1;
-      return 0;
-    });
-    return totals.reduce((acc, curr) => acc + curr);
-  }
-
-  private logWithIndent(indents: number, msg: string) {
+  private _logWithIndent(indents: number, msg: string) {
     let indent = '';
     if (indents) {
       indent = '    ';
@@ -47,28 +39,36 @@ export default class Scan extends Command {
     this.log(indent + msg);
   }
 
-  private printResult(r: ScanResult) {
+  private _printResult(r: ScanResult) {
     const description = chalk.grey(r.description);
     const name = chalk.bold(r.ruleName);
-    this.logWithIndent(1, name);
+    this._logWithIndent(1, name);
 
     if (r.total) {
       const redCheck = '\u274c ';
-      this.logWithIndent(2, redCheck + description);
-      this.logWithIndent(2, 'Resources:');
+      this._logWithIndent(2, redCheck + description);
+      this._logWithIndent(2, 'Resources:');
       for (const resource of r.resources) {
-        this.logWithIndent(3, resource.id);
+        this._logWithIndent(3, resource.id);
       }
     } else {
       const greenCheck = chalk.green('\u2713 ');
-      this.logWithIndent(2, greenCheck + chalk.grey(r.description));
+      this._logWithIndent(2, greenCheck + chalk.grey(r.description));
     }
 
     this.log('');
   }
 
-  private printSummary(results: ScanResult[]) {
-    const passed = this.totalRulesPassed(results);
+  private _totalRulesPassed(results: ScanResult[]) {
+    let total = 0;
+    for (const r of results) {
+      if (r.total) total++;
+    }
+    return total;
+  }
+
+  private _printSummary(results: ScanResult[]) {
+    const passed = this._totalRulesPassed(results);
     const total = results.length;
     const failed = total - passed;
     this.log(chalk.green(passed + ' passing'));
@@ -78,14 +78,14 @@ export default class Scan extends Command {
 
   print(results: ScanResult[]) {
     for (const r of results) {
-      this.printResult(r);
+      this._printResult(r);
     }
-    this.printSummary(results);
+    this._printSummary(results);
   }
 
   async scan(
     ruleType: RuleContext['type'],
-    scope: string,
+    target: string,
     ruleNames?: string[]
   ) {
     const scanner = new Scanner();
@@ -96,7 +96,7 @@ export default class Scan extends Command {
       // rules.filter((r: Rule) => ruleNames.includes(r.name));
     }
     cli.action.start('Scanning');
-    const results = await scanner.scan(ruleContext, scope);
+    const results = await scanner.scan(ruleContext, target);
     cli.action.stop();
     this.print(results);
   }
