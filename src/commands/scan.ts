@@ -2,6 +2,7 @@ import {Command, flags} from '@oclif/command';
 import {Scanner, ScanResult} from '../scanner';
 import cli from 'cli-ux';
 import {RuleContext, Rule} from '../rules';
+import chalk = require('chalk');
 
 export default class Scan extends Command {
   static description =
@@ -9,11 +10,6 @@ export default class Scan extends Command {
 
   static examples = [
     `$ aza scan --scope <SCOPE>
-Rule       Description   Result 
-[ruleName] [description] [Pass/Fail]
-Resource IDs ([total]):
-[resourceId]
-====================================
 `,
   ];
 
@@ -34,55 +30,57 @@ Resource IDs ([total]):
     }),
   };
 
-  private _ruleInfoColumns = {
-    rule: {
-      get: (row: ScanResult) => row.ruleName,
-    },
-    description: {
-      get: (row: ScanResult) => row.description,
-    },
-    result: {
-      get: (row: ScanResult) => (row.total ? 'Fail' : 'Pass'),
-    },
-  };
-
-  private _resourcesColumn(total: number) {
-    return {
-      resources: {
-        header: `Resource IDs (${total}):`,
-        get: (resource: {id: string}) => resource.id,
-      },
-    };
+  private totalRulesPassed(results: ScanResult[]) {
+    const totals: number[] = results.map(r => {
+      if (r.total === 0) return 1;
+      return 0;
+    });
+    return totals.reduce((acc, curr) => acc + curr);
   }
 
-  private _printDivider(result: ScanResult) {
-    const maxRowLength = this._maxRowLength(result);
-    let divider = '';
-    for (let i = 0; i < maxRowLength; i++) divider += '=';
-    this.log(divider);
-    this.log('\n');
+  private logWithIndent(indents: number, msg: string) {
+    let indent = '';
+    if (indents) {
+      indent = '    ';
+      for (let i = indents; i > 0; i--) indent += '  ';
+    }
+    this.log(indent + msg);
   }
 
-  private _maxRowLength(result: ScanResult) {
-    const row1Length = result.ruleName.length + result.description.length;
-    const row2Lengths = result.resources.map(({id}) => id.length);
-    return Math.max(row1Length, ...row2Lengths);
+  private printResult(r: ScanResult) {
+    const description = chalk.grey(r.description);
+    const name = chalk.bold(r.ruleName);
+    this.logWithIndent(1, name);
+
+    if (r.total) {
+      const redCheck = '\u274c ';
+      this.logWithIndent(2, redCheck + description);
+      this.logWithIndent(2, 'Resources:');
+      for (const resource of r.resources) {
+        this.logWithIndent(3, resource.id);
+      }
+    } else {
+      const greenCheck = chalk.green('\u2713 ');
+      this.logWithIndent(2, greenCheck + chalk.grey(r.description));
+    }
+
+    this.log('');
+  }
+
+  private printSummary(results: ScanResult[]) {
+    const passed = this.totalRulesPassed(results);
+    const total = results.length;
+    const failed = total - passed;
+    this.log(chalk.green(passed + ' passing'));
+    failed && this.log(chalk.red(failed + ' failing'));
+    this.log(total + ' scanned');
   }
 
   print(results: ScanResult[]) {
     for (const r of results) {
-      // rule information table
-      cli.table([r], this._ruleInfoColumns);
-
-      // resource ids table
-      if (r.total) {
-        cli.table(r.resources, this._resourcesColumn(r.resources.length), {
-          'no-truncate': true,
-        });
-      }
-
-      this._printDivider(r);
+      this.printResult(r);
     }
+    this.printSummary(results);
   }
 
   async scan(
@@ -94,9 +92,8 @@ Resource IDs ([total]):
     const ruleContext = await scanner.getRulesFromFile(ruleType);
     if (ruleNames) {
       // fix this
-      // ruleContext.rules = ruleContext.rules.filter((r: Rule) =>
-      //   ruleNames.includes(r.name)
-      // );
+      // const rules = ruleContext.rules;
+      // rules.filter((r: Rule) => ruleNames.includes(r.name));
     }
     cli.action.start('Scanning');
     const results = await scanner.scan(ruleContext, scope);
