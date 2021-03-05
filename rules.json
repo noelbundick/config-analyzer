@@ -1,20 +1,27 @@
 [
   {
-    "name": "Mock Rule - Get VMs",
-    "description": "Get all virtual Machines in a subscription",
     "type": "resourceGraph",
-    "query": "Resources | where type =~ 'Microsoft.Compute/virtualMachines'"
+    "rules": [
+      {
+        "name": "get-vms",
+        "description": "Get all virtual Machines in a subscription",
+        "query": "Resources | where type =~ 'Microsoft.Compute/virtualMachines'"
+      },
+      {
+        "name": "get-vnets",
+        "description": "Get all virtual networks in a subscription",
+        "query": "Resources | where type =~ 'Microsoft.Network/virtualNetworks'"
+      }
+    ]
   },
   {
-    "name": "Mock Rule - Get Storage Accounts",
-    "description": "Get all storage accounts in a subscription",
-    "type": "resourceGraph",
-    "query": "Resources | where type =~ 'Microsoft.Storage/storageAccounts'"
-  },
-  {
-    "name": "Dummy Mock Rule",
-    "description": "Mocks a multiple rule system",
     "type": "dummy",
-    "context": {"message": "I don't do anything"}
+    "rules": [
+      {
+        "name": "dummy-rule",
+        "description": "Mocks a multiple rule system",
+        "context": {"message": "I don't do anything"}
+      }
+    ]
   }
 ]

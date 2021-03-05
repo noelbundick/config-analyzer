@@ -15,7 +15,6 @@ describe('Resource Graph Rule', function () {
       name,
       query,
       description,
-      type: 'resourceGraph',
     };
     const results = await ResourceGraphRule.execute([rule], subscriptionId);
     for (const result of results) {
@@ -25,7 +24,7 @@ describe('Resource Graph Rule', function () {
         'ruleName',
         'description',
         'total',
-        'ids',
+        'resources',
       ]);
       assert.equal(result.total, 0);
     }

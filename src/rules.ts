@@ -5,19 +5,28 @@ import {ScanResult} from './scanner';
 
 export type Rule = IResourceGraphRule | IDummyRule;
 
+export type RuleContext = ResourceGraphRuleContext | DummyRuleContext;
+
+interface ResourceGraphRuleContext {
+  type: 'resourceGraph';
+  rules: IResourceGraphRule[];
+}
+
+interface DummyRuleContext {
+  type: 'dummy';
+  rules: IDummyRule[];
+}
+
 interface BaseRule {
   name: string;
   description: string;
-  type: string;
 }
 
-export interface IResourceGraphRule extends BaseRule {
-  type: 'resourceGraph';
+interface IResourceGraphRule extends BaseRule {
   query: string;
 }
 
-export interface IDummyRule extends BaseRule {
-  type: 'dummy';
+interface IDummyRule extends BaseRule {
   context: object;
 }
 
@@ -28,7 +37,7 @@ export class DummyRule {
         ruleName: r.name,
         description: r.description,
         total: 0,
-        ids: [],
+        resources: [],
       }) as Promise<ScanResult>;
     });
     return Promise.all(results);
@@ -63,7 +72,9 @@ export class ResourceGraphRule {
       ruleName: rule.name,
       description: rule.description,
       total: response.totalRecords,
-      ids: resourceIds,
+      resources: resourceIds.map(id => {
+        return {id};
+      }),
     };
     return scanResult;
   }
