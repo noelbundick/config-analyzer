@@ -1,7 +1,7 @@
 import {Command, flags} from '@oclif/command';
 import {Scanner, ScanResult} from '../scanner';
 import cli from 'cli-ux';
-import {RuleContext} from '../rules';
+import {RuleContext, Rule} from '../rules';
 
 export default class Scan extends Command {
   static description =
@@ -93,7 +93,10 @@ Resource IDs ([total]):
     const scanner = new Scanner();
     const ruleContext = await scanner.getRulesFromFile(ruleType);
     if (ruleNames) {
-      // handle this
+      // fix this
+      // ruleContext.rules = ruleContext.rules.filter((r: Rule) =>
+      //   ruleNames.includes(r.name)
+      // );
     }
     cli.action.start('Scanning');
     const results = await scanner.scan(ruleContext, scope);
