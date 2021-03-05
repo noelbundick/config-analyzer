@@ -3,14 +3,14 @@
     "type": "resourceGraph",
     "rules": [
       {
-        "name": "Mock Rule - Intentional Bad Query",
-        "description": "Should return no results",
+        "name": "mockRule1",
+        "description": "Intentional Bad Query - Should return no results",
         "query": "Resources | where type =~ 'Microsoft.Network/virtualNetworks2'"
       },
       {
-        "name": "Mock Rule - Intentional Bad Query",
-        "description": "Should return no results",
-        "query": "Resources | where type =~ 'Microsoft.Network/virtualNetworks2'"
+        "name": "mockRule2",
+        "description": "Intentional Bad Query - Should return no results",
+        "query": "Resources | where type =~ 'Microsoft.Network/virtualNetworks3'"
       }
     ]
   },
@@ -18,13 +18,13 @@
     "type": "dummy",
     "rules": [
       {
-        "name": "Mock Dummy Rule",
+        "name": "mockRule1",
         "description": "mocks a multiple rule system",
         "type": "dummy",
         "context": {}
       },
       {
-        "name": "Mock Dummy Rule 2",
+        "name": "mockRule2",
         "description": "mocks a multiple rule system",
         "type": "dummy",
         "context": {}
