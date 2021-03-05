@@ -9,10 +9,6 @@ export interface ScanResult {
   resources: {id: string}[];
 }
 
-// export interface Id {
-//   id: string;
-// }
-
 export class Scanner {
   async scan(context: RuleContext, target: string) {
     switch (context.type) {
