@@ -1,5 +1,5 @@
 import {assert} from 'chai';
-import {Rule, ResourceGraphRule, RuleContext} from '../../src/rules';
+import {ResourceGraphRule, RuleContext} from '../../src/rules';
 import {subscriptionId} from '.';
 
 describe('Resource Graph Rule', function () {

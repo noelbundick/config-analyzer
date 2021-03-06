@@ -3,37 +3,35 @@ import {DefaultAzureCredential} from '@azure/identity';
 import {AzureClient} from './azure';
 import {ScanResult} from './scanner';
 
-export type Rule = IResourceGraphRule | IDummyRule;
-
 export type RuleContext = ResourceGraphRuleContext | DummyRuleContext;
 
-interface IRuleContext {
+interface BaseRuleContext {
   type: string;
   rules: Rule[];
 }
 
-interface ResourceGraphRuleContext extends IRuleContext {
+interface ResourceGraphRuleContext extends BaseRuleContext {
   type: 'resourceGraph';
-  subscriptionId: string;
   rules: IResourceGraphRule[];
+  subscriptionId: string;
 }
 
-interface DummyRuleContext extends IRuleContext {
+interface DummyRuleContext extends BaseRuleContext {
   type: 'dummy';
-  target: object;
   rules: IDummyRule[];
+  target: object;
 }
 
-interface IRule {
+interface Rule {
   name: string;
   description: string;
 }
 
-interface IResourceGraphRule extends IRule {
+interface IResourceGraphRule extends Rule {
   query: string;
 }
 
-interface IDummyRule extends IRule {
+interface IDummyRule extends Rule {
   context: object;
 }
 

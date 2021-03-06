@@ -18,12 +18,12 @@
     "type": "dummy",
     "rules": [
       {
-        "name": "dummy-rule",
+        "name": "dummy-rule-1",
         "description": "Mocks a multiple rule system",
         "context": {"message": "I don't do anything"}
       },
       {
-        "name": "dummy-rule",
+        "name": "dummy-rule-2",
         "description": "Mocks a multiple rule system",
         "context": {"message": "I don't do anything"}
       }

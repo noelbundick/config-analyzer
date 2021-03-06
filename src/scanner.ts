@@ -23,18 +23,34 @@ export class Scanner {
     }
   }
 
-  filterRules(type: RuleContext['type'], context: RuleContext[]) {
-    return context.filter(r => r.type === type)[0];
+  getContextByType(type: RuleContext['type'], contexts: RuleContext[]) {
+    return contexts.filter(r => r.type === type)[0];
+  }
+
+  // typescript issue with filtering discriminated unions
+  // look into this further
+  filterRulesByName(names: string[], context: RuleContext) {
+    switch (context.type) {
+      case 'resourceGraph':
+        context.rules = context.rules.filter(r => names.includes(r.name));
+        break;
+      case 'dummy':
+        context.rules = context.rules.filter(r => names.includes(r.name));
+        break;
+    }
+    return context;
   }
 
   async getRulesFromFile(
     type: RuleContext['type'],
-    filePath = '../rules.json'
+    filePath = '../rules.json',
+    ruleNames?: string[]
   ) {
     const absPath = path.join(__dirname, filePath);
     const data = await fsPromises.readFile(absPath, 'utf8');
-    const rules: RuleContext[] = JSON.parse(data);
-    const filteredRules = this.filterRules(type, rules);
-    return filteredRules;
+    const contexts: RuleContext[] = JSON.parse(data);
+    const ruleContext = this.getContextByType(type, contexts);
+    ruleNames && this.filterRulesByName(ruleNames, ruleContext);
+    return ruleContext;
   }
 }

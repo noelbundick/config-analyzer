@@ -33,8 +33,8 @@ export default class Scan extends Command {
   private _logWithIndent(indents: number, msg: string) {
     let indent = '';
     if (indents) {
-      indent = '    ';
-      for (let i = indents; i > 0; i--) indent += '  ';
+      indent = '  ';
+      for (let i = indents; i > 0; i--) indent += indent;
     }
     this.log(indent + msg);
   }
@@ -60,11 +60,11 @@ export default class Scan extends Command {
   }
 
   private _totalRulesPassed(results: ScanResult[]) {
-    let total = 0;
+    let passing = 0;
     for (const r of results) {
-      if (r.total) total++;
+      if (!r.total) passing++;
     }
-    return total;
+    return passing;
   }
 
   private _printSummary(results: ScanResult[]) {
@@ -89,11 +89,9 @@ export default class Scan extends Command {
     ruleNames?: string[]
   ) {
     const scanner = new Scanner();
-    const ruleContext = await scanner.getRulesFromFile(ruleType);
+    let ruleContext = await scanner.getRulesFromFile(ruleType);
     if (ruleNames) {
-      // fix this
-      // const rules = ruleContext.rules;
-      // rules.filter((r: Rule) => ruleNames.includes(r.name));
+      ruleContext = scanner.filterRulesByName(ruleNames, ruleContext);
     }
     cli.action.start('Scanning');
     const results = await scanner.scan(ruleContext, target);
