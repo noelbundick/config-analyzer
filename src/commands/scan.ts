@@ -89,10 +89,7 @@ export default class Scan extends Command {
     ruleNames?: string[]
   ) {
     const scanner = new Scanner();
-    let ruleContext = await scanner.getRulesFromFile(ruleType);
-    if (ruleNames) {
-      ruleContext = scanner.filterRulesByName(ruleNames, ruleContext);
-    }
+    const ruleContext = await scanner.getRulesFromFile(ruleType, ruleNames);
     cli.action.start('Scanning');
     const results = await scanner.scan(ruleContext, target);
     cli.action.stop();
@@ -102,9 +99,9 @@ export default class Scan extends Command {
   async run() {
     const {flags} = this.parse(Scan);
     if (flags.scope) {
-      this.scan('resourceGraph', flags.scope, flags.rule);
+      await this.scan('resourceGraph', flags.scope, flags.rule);
     } else if (flags.dummy) {
-      this.scan('dummy', 'no target', flags.rule);
+      await this.scan('dummy', 'no target', flags.rule);
     } else {
       this.error('Command scan expects a Flag');
     }

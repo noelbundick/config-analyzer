@@ -5,18 +5,13 @@ import {ScanResult} from './scanner';
 
 export type RuleContext = ResourceGraphRuleContext | DummyRuleContext;
 
-interface BaseRuleContext {
-  type: string;
-  rules: Rule[];
-}
-
-interface ResourceGraphRuleContext extends BaseRuleContext {
+interface ResourceGraphRuleContext {
   type: 'resourceGraph';
   rules: IResourceGraphRule[];
   subscriptionId: string;
 }
 
-interface DummyRuleContext extends BaseRuleContext {
+interface DummyRuleContext {
   type: 'dummy';
   rules: IDummyRule[];
   target: object;

@@ -43,8 +43,8 @@ export class Scanner {
 
   async getRulesFromFile(
     type: RuleContext['type'],
-    filePath = '../rules.json',
-    ruleNames?: string[]
+    ruleNames?: string[],
+    filePath = '../rules.json'
   ) {
     const absPath = path.join(__dirname, filePath);
     const data = await fsPromises.readFile(absPath, 'utf8');

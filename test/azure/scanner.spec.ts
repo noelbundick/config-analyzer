@@ -10,6 +10,7 @@ describe('Scanner', function () {
   it('can load and execute resource graph rules from a JSON file', async () => {
     const rules = await scanner.getRulesFromFile(
       'resourceGraph',
+      undefined,
       '../test/rules.json'
     );
     const results = await scanner.scan(rules, subscriptionId);
