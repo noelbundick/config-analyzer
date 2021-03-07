@@ -30,15 +30,14 @@ export class Scanner {
   // typescript issue with filtering discriminated unions
   // look into this further
   filterRulesByName(names: string[], context: RuleContext) {
-    switch (context.type) {
-      case 'resourceGraph':
-        context.rules = context.rules.filter(r => names.includes(r.name));
-        break;
-      case 'dummy':
-        context.rules = context.rules.filter(r => names.includes(r.name));
-        break;
+    let i = 0;
+    while (i < context.rules.length) {
+      if (names.includes(context.rules[i].name)) {
+        i++;
+      } else {
+        context.rules.splice(i, 1);
+      }
     }
-    return context;
   }
 
   async getRulesFromFile(
