@@ -8,13 +8,14 @@ describe('Scanner', function () {
   this.timeout(8000);
   const scanner = new Scanner();
   it('can load and execute resource graph rules from a JSON file', async () => {
-    const rules = await scanner.getRulesFromFile(
+    const ruleContext = await scanner.getRulesFromFile(
       'resourceGraph',
       undefined,
       '../test/rules.json'
     );
-    const results = await scanner.scan(rules, {target: {subscriptionId}});
-    assert.equal(results.length, 2);
+    const target = {subscriptionId};
+    const results = await scanner.scan(ruleContext, target);
+    assert.equal(results.length, ruleContext.rules.length);
     results.forEach(r => {
       assert.containsAllKeys(r, [
         'ruleName',
@@ -22,11 +23,10 @@ describe('Scanner', function () {
         'total',
         'resources',
       ]);
-      assert.equal(r.total, 0);
     });
   });
 
-  it('can scan a subscription and resource group for vnets named vnet', async () => {
+  it('can scan a execute a resource graph rule against a subscription', async () => {
     const rule = {
       name: 'get-vnets',
       description: 'gets all vnets in a resource group',
@@ -45,6 +45,26 @@ describe('Scanner', function () {
       assert.equal(r.description, rule.description);
       assert.equal(r.total, 1);
       assert.equal(r.resources.length, 1);
+    });
+  });
+  it('can execute a resource graph rule against a subscription and resource group', async () => {
+    const ruleContext = await scanner.getRulesFromFile(
+      'resourceGraph',
+      ['get-vnets'],
+      '../test/rules.json'
+    );
+    const target = {subscriptionId, resourceGroups: [resourceGroup]};
+    const results = await scanner.scan(ruleContext, target);
+    assert.equal(results.length, 1, 'only one rule is run');
+    results.forEach(r => {
+      assert.containsAllKeys(r, [
+        'ruleName',
+        'description',
+        'total',
+        'resources',
+      ]);
+      assert.equal(r.total, 1, 'total resources is 1');
+      assert.equal(r.ruleName, 'get-vnets', 'rule name is get-vnets');
     });
   });
 });
