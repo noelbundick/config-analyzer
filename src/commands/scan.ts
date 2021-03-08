@@ -6,6 +6,7 @@ import chalk = require('chalk');
 
 export default class Scan extends Command {
   private _isVerbose = false;
+  private _isDebugMode = false;
 
   static description =
     'Scans azure resources for potential configuration issues';
@@ -46,6 +47,9 @@ export default class Scan extends Command {
     verbose: flags.boolean({
       char: 'v',
       description: 'prints all results',
+    }),
+    debug: flags.boolean({
+      description: 'prints debugging logs',
     }),
   };
 
@@ -118,9 +122,15 @@ export default class Scan extends Command {
     this._print(results);
   }
 
+  async catch(error: Error) {
+    if (this._isDebugMode) console.log(error);
+    throw error;
+  }
+
   async run() {
     const {flags} = this.parse(Scan);
     if (flags.verbose) this._isVerbose = true;
+    if (flags.debug) this._isDebugMode = true;
     if (flags.scope) {
       const subscriptionId = flags.scope;
       const resourceGroups = flags.resourceGroup;
