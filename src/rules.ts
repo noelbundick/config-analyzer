@@ -5,13 +5,16 @@ import {ScanResult} from './scanner';
 
 export type RuleContext = ResourceGraphRuleContext | DummyRuleContext;
 
-interface ResourceGraphRuleContext {
+export interface ResourceGraphRuleContext {
   type: 'resourceGraph';
   rules: IResourceGraphRule[];
-  subscriptionId: string;
+  target: {
+    subscriptionId: string;
+    resourceGroups?: string[];
+  };
 }
 
-interface DummyRuleContext {
+export interface DummyRuleContext {
   type: 'dummy';
   rules: IDummyRule[];
   target: object;
@@ -52,11 +55,15 @@ interface ResourceGraphQueryResponseColumn {
 
 export class ResourceGraphRule {
   static async execute(context: ResourceGraphRuleContext) {
+    const {target, rules} = context;
     const credential = new DefaultAzureCredential();
     const client = new AzureClient(credential);
-    const results = context.rules.map(async r => {
+    const results = rules.map(async r => {
+      if (target.resourceGroups) {
+        this._queryByResourceGroups(target.resourceGroups, r);
+      }
       const resources = await client.queryResources(r.query, [
-        context.subscriptionId,
+        target.subscriptionId,
       ]);
       return this._toScanResult(resources, r);
     });
@@ -80,5 +87,18 @@ export class ResourceGraphRule {
       }),
     };
     return scanResult;
+  }
+
+  private static _queryByResourceGroups(
+    resourceGroups: string[],
+    rule: IResourceGraphRule
+  ) {
+    resourceGroups.forEach((rGroup, i) => {
+      if (i === 0) {
+        rule.query += ` | where resourceGroup=='${rGroup}'`;
+      } else {
+        rule.query += ` or resourceGroup=='${rGroup}'`;
+      }
+    });
   }
 }

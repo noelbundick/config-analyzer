@@ -29,10 +29,16 @@ export default class Scan extends Command {
       char: 's',
       description: 'azure subscription id to scan',
     }),
+    resourceGroup: flags.string({
+      description: 'azure subscription id to scan',
+      multiple: true,
+      dependsOn: ['scope'],
+    }),
     rule: flags.string({
       char: 'r',
       description: 'rules to execute',
       multiple: true,
+      dependsOn: ['scope= or --dummy'],
     }),
     dummy: flags.boolean({
       char: 'd',
@@ -102,7 +108,7 @@ export default class Scan extends Command {
 
   private async _scan(
     ruleType: RuleContext['type'],
-    target: string,
+    target: RuleContext['target'],
     ruleNames?: string[]
   ) {
     const scanner = new Scanner();
@@ -117,9 +123,15 @@ export default class Scan extends Command {
     const {flags} = this.parse(Scan);
     if (flags.verbose) this._isVerbose = true;
     if (flags.scope) {
-      await this._scan('resourceGraph', flags.scope, flags.rule);
+      const subscriptionId = flags.scope;
+      const resourceGroups = flags.resourceGroup;
+      const target = {
+        subscriptionId,
+        resourceGroups,
+      };
+      await this._scan('resourceGraph', target, flags.rule);
     } else if (flags.dummy) {
-      await this._scan('dummy', 'no target', flags.rule);
+      await this._scan('dummy', {target: 'no target'}, flags.rule);
     } else {
       this.error('Command scan expects a Flag');
     }

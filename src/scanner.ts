@@ -1,4 +1,10 @@
-import {ResourceGraphRule, DummyRule, RuleContext} from './rules';
+import {
+  ResourceGraphRule,
+  DummyRule,
+  RuleContext,
+  ResourceGraphRuleContext,
+  DummyRuleContext,
+} from './rules';
 import {promises as fsPromises} from 'fs';
 import * as path from 'path';
 
@@ -10,14 +16,14 @@ export interface ScanResult {
 }
 
 export class Scanner {
-  async scan(context: RuleContext, target: string | object) {
+  async scan(context: RuleContext, target: RuleContext['target']) {
     switch (context.type) {
       case 'resourceGraph': {
-        context.subscriptionId = target as string;
+        context.target = target as ResourceGraphRuleContext['target'];
         return ResourceGraphRule.execute(context);
       }
       case 'dummy': {
-        context.target = target as object;
+        context.target = target as DummyRuleContext['target'];
         return DummyRule.execute(context);
       }
     }

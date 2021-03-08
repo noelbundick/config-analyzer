@@ -13,7 +13,7 @@ describe('Scanner', function () {
       undefined,
       '../test/rules.json'
     );
-    const results = await scanner.scan(rules, subscriptionId);
+    const results = await scanner.scan(rules, {target: {subscriptionId}});
     assert.equal(results.length, 2);
     results.forEach(r => {
       assert.containsAllKeys(r, [
@@ -34,11 +34,11 @@ describe('Scanner', function () {
     };
     const ruleContext: RuleContext = {
       type: 'resourceGraph',
-      subscriptionId,
+      target: {subscriptionId},
       rules: [rule],
     };
 
-    const results = await scanner.scan(ruleContext, subscriptionId);
+    const results = await scanner.scan(ruleContext, ruleContext.target);
     assert.equal(results.length, 1);
     results.forEach(r => {
       assert.equal(r.ruleName, rule.name);

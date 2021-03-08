@@ -18,7 +18,7 @@ describe('Resource Graph Rule', function () {
     };
     const context: RuleContext = {
       type: 'resourceGraph',
-      subscriptionId,
+      target: {subscriptionId},
       rules: [rule],
     };
     const results = await ResourceGraphRule.execute(context);
