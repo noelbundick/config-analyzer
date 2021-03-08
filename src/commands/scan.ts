@@ -5,11 +5,21 @@ import {RuleContext} from '../rules';
 import chalk = require('chalk');
 
 export default class Scan extends Command {
+  private _isVerbose = false;
+
   static description =
     'Scans azure resources for potential configuration issues';
 
   static examples = [
     `$ aza scan --scope <SCOPE>
+    [rule-name]
+        [✓ | ❌][rule-description]     
+        Resources:
+                [resource-ids]
+
+    [number-passing]
+    [number-failing]
+    [total-rules-scanned]   
 `,
   ];
 
@@ -17,7 +27,7 @@ export default class Scan extends Command {
     help: flags.help({char: 'h'}),
     scope: flags.string({
       char: 's',
-      description: 'azure subscription, resoucres id to scan',
+      description: 'azure subscription id to scan',
     }),
     rule: flags.string({
       char: 'r',
@@ -28,35 +38,42 @@ export default class Scan extends Command {
       char: 'd',
       description: 'runs dummy rules to mock multi rule system',
     }),
+    verbose: flags.boolean({
+      char: 'v',
+      description: 'prints all results',
+    }),
   };
 
-  private _logWithIndent(indents: number, msg: string) {
+  private _logWithIndent(indentNum: number, msg: string) {
     let indent = '';
-    if (indents) {
+    if (indentNum) {
       indent = '  ';
-      for (let i = indents; i > 0; i--) indent += indent;
+      for (let i = indentNum; i > 0; i--) {
+        indent += indent;
+      }
     }
     this.log(indent + msg);
   }
 
   private _printResult(r: ScanResult) {
-    const description = chalk.grey(r.description);
-    const name = chalk.bold(r.ruleName);
-    this._logWithIndent(1, name);
+    if (this._isVerbose || r.total) {
+      const description = chalk.grey(r.description);
+      const name = chalk.bold(r.ruleName);
+      this._logWithIndent(1, name);
 
-    if (r.total) {
-      const redCheck = '\u274c ';
-      this._logWithIndent(2, redCheck + description);
-      this._logWithIndent(2, 'Resources:');
-      for (const resource of r.resources) {
-        this._logWithIndent(3, resource.id);
+      if (r.total) {
+        const redCheck = '\u274c ';
+        this._logWithIndent(2, redCheck + description);
+        this._logWithIndent(2, 'Resources:');
+        for (const resource of r.resources) {
+          this._logWithIndent(3, resource.id);
+        }
+      } else {
+        const greenCheck = chalk.green('\u2713 ');
+        this._logWithIndent(2, greenCheck + chalk.grey(r.description));
       }
-    } else {
-      const greenCheck = chalk.green('\u2713 ');
-      this._logWithIndent(2, greenCheck + chalk.grey(r.description));
+      this.log('');
     }
-
-    this.log('');
   }
 
   private _totalRulesPassed(results: ScanResult[]) {
@@ -67,23 +84,23 @@ export default class Scan extends Command {
     return passing;
   }
 
-  private _printSummary(results: ScanResult[]) {
-    const passed = this._totalRulesPassed(results);
+  private printSummary(results: ScanResult[]) {
+    const totalPassed = this._totalRulesPassed(results);
     const total = results.length;
-    const failed = total - passed;
-    this.log(chalk.green(passed + ' passing'));
-    failed && this.log(chalk.red(failed + ' failing'));
+    const totalFailed = total - totalPassed;
+    this.log(chalk.green(totalPassed + ' passing'));
+    totalFailed && this.log(chalk.red(totalFailed + ' failing'));
     this.log(total + ' scanned');
   }
 
-  print(results: ScanResult[]) {
+  private _print(results: ScanResult[]) {
     for (const r of results) {
       this._printResult(r);
     }
-    this._printSummary(results);
+    this.printSummary(results);
   }
 
-  async scan(
+  private async _scan(
     ruleType: RuleContext['type'],
     target: string,
     ruleNames?: string[]
@@ -93,15 +110,16 @@ export default class Scan extends Command {
     cli.action.start('Scanning');
     const results = await scanner.scan(ruleContext, target);
     cli.action.stop();
-    this.print(results);
+    this._print(results);
   }
 
   async run() {
     const {flags} = this.parse(Scan);
+    if (flags.verbose) this._isVerbose = true;
     if (flags.scope) {
-      await this.scan('resourceGraph', flags.scope, flags.rule);
+      await this._scan('resourceGraph', flags.scope, flags.rule);
     } else if (flags.dummy) {
-      await this.scan('dummy', 'no target', flags.rule);
+      await this._scan('dummy', 'no target', flags.rule);
     } else {
       this.error('Command scan expects a Flag');
     }
