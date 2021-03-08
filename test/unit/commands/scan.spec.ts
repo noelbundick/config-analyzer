@@ -3,21 +3,21 @@ import {expect, test} from '@oclif/test';
 describe('scan unit tests', () => {
   test
     .stdout({print: false})
-    .command(['scan', '--dummy'])
+    .command(['scan', '--dummy', '-v'])
     .it('runs scan --dummy', async ctx => {
       expect(ctx.stdout).to.contain('dummy-rule-1');
       expect(ctx.stdout).to.contain('dummy-rule-2');
     });
   test
     .stdout({print: false})
-    .command(['scan', '--dummy', '--rule', 'dummy-rule-1'])
+    .command(['scan', '--dummy', '--rule', 'dummy-rule-1', '--verbose'])
     .it('runs scan --dummy --rule dummy-rule-1', async ctx => {
       expect(ctx.stdout).to.contain('dummy-rule-1');
       expect(ctx.stdout).to.not.contain('dummy-rule-2');
     });
   test
     .stdout({print: false})
-    .command(['scan', '-d', '-r', 'dummy-rule-2'])
+    .command(['scan', '-d', '-r', 'dummy-rule-2', '-v'])
     .it('runs scan -d -r dummy-rule-2', async ctx => {
       expect(ctx.stdout).to.contain('dummy-rule-2');
       expect(ctx.stdout).to.not.contain('dummy-rule-1');

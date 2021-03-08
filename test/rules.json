@@ -18,13 +18,25 @@
     "type": "dummy",
     "rules": [
       {
-        "name": "mockRule1",
+        "name": "dummy-rule-1",
         "description": "mocks a multiple rule system",
         "type": "dummy",
         "context": {}
       },
       {
-        "name": "mockRule2",
+        "name": "dummy-rule-2",
+        "description": "mocks a multiple rule system",
+        "type": "dummy",
+        "context": {}
+      },
+      {
+        "name": "dummy-rule-3",
+        "description": "mocks a multiple rule system",
+        "type": "dummy",
+        "context": {}
+      },
+      {
+        "name": "dummy-rule-4",
         "description": "mocks a multiple rule system",
         "type": "dummy",
         "context": {}

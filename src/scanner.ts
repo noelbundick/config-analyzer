@@ -27,8 +27,6 @@ export class Scanner {
     return contexts.filter(r => r.type === type)[0];
   }
 
-  // typescript issue with filtering discriminated unions
-  // look into this further
   filterRulesByName(names: string[], context: RuleContext) {
     let i = 0;
     while (i < context.rules.length) {
