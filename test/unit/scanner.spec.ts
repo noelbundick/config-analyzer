@@ -5,6 +5,15 @@ describe('Scanner', function () {
   this.slow(5000);
   this.timeout(8000);
   const scanner = new Scanner();
+  it('can filter ruleContexts by type', async () => {
+    const ruleContext = await scanner.getRulesFromFile(
+      'dummy',
+      undefined,
+      '../test/rules.json'
+    );
+    expect(ruleContext.type).to.equal('dummy');
+    expect(ruleContext.rules.length).to.equal(4);
+  });
   it('can filter rules by name', async () => {
     const ruleNames = ['dummy-rule-2', 'dummy-rule-3'];
     const ruleContext = await scanner.getRulesFromFile(
