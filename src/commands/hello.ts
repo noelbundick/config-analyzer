@@ -14,7 +14,6 @@ hello world from ./src/hello.ts!
     // flag with a value (-n, --name=VALUE)
     name: flags.string({char: 'n', description: 'name to print'}),
     // flag with no value (-f, --force)
-    err: flags.string({char: 'e', description: 'throws error'}),
     force: flags.boolean({char: 'f'}),
   };
 
@@ -22,7 +21,6 @@ hello world from ./src/hello.ts!
 
   async run() {
     const {args, flags} = this.parse(Hello);
-    if (flags.err) return this.warn('I am an error');
 
     const name = flags.name ?? 'world';
     this.log(`hello ${name} from .\\src\\commands\\hello.ts`);
