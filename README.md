@@ -33,7 +33,6 @@ USAGE
   $ aza hello [FILE]
 
 OPTIONS
-  -e, --err=err    throws error
   -f, --force
   -h, --help       show CLI help
   -n, --name=name  name to print
@@ -52,13 +51,23 @@ USAGE
   $ aza scan
 
 OPTIONS
-  -d, --dummy        runs dummy rules to mock multi rule system
-  -h, --help         show CLI help
-  -r, --rule=rule    rules to execute
-  -s, --scope=scope  azure subscription, resoucres id to scan
+  -d, --dummy                    runs dummy rules to mock multi rule system
+  -h, --help                     show CLI help
+  -r, --rule=rule                rules to execute
+  -s, --scope=scope              azure subscription id to scan
+  -v, --verbose                  prints all results
+  --resourceGroup=resourceGroup  azure subscription id to scan
 
 EXAMPLE
   $ aza scan --scope <SCOPE>
+       [rule-name]
+           [✓ | ❌][rule-description]     
+           Resources:
+                   [resource-ids]
+
+       [number-passing]
+       [number-failing]
+       [total-rules-scanned]
 ```
 <!-- commandsstop -->
 
