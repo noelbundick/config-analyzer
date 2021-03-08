@@ -38,7 +38,6 @@ export default class Scan extends Command {
       char: 'r',
       description: 'rules to execute',
       multiple: true,
-      dependsOn: ['scope= or --dummy'],
     }),
     dummy: flags.boolean({
       char: 'd',
