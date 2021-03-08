@@ -3,14 +3,19 @@
     "type": "resourceGraph",
     "rules": [
       {
-        "name": "mockRule1",
+        "name": "rg-rule-1",
         "description": "Intentional Bad Query - Should return no results",
         "query": "Resources | where type =~ 'Microsoft.Network/virtualNetworks2'"
       },
       {
-        "name": "mockRule2",
+        "name": "rg-rule-2",
         "description": "Intentional Bad Query - Should return no results",
         "query": "Resources | where type =~ 'Microsoft.Network/virtualNetworks3'"
+      },
+      {
+        "name": "get-vnets",
+        "description": "Gets all vnets in a subscription",
+        "query": "Resources | where type =~ 'Microsoft.Network/virtualNetworks'"
       }
     ]
   },
