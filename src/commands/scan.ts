@@ -30,8 +30,9 @@ export default class Scan extends Command {
       char: 's',
       description: 'azure subscription id to scan',
     }),
-    resourceGroup: flags.string({
+    group: flags.string({
       description: 'azure subscription id to scan',
+      char: 'g',
       multiple: true,
       dependsOn: ['scope'],
     }),
@@ -133,7 +134,7 @@ export default class Scan extends Command {
     if (flags.debug) this._isDebugMode = true;
     if (flags.scope) {
       const subscriptionId = flags.scope;
-      const resourceGroups = flags.resourceGroup;
+      const resourceGroups = flags.group;
       const target = {
         subscriptionId,
         resourceGroups,
