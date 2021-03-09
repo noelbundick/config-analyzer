@@ -74,7 +74,7 @@ export default class Scan extends Command {
       if (r.total) {
         const redCheck = '\u274c ';
         this._logWithIndent(2, redCheck + description);
-        this._logWithIndent(2, 'Resources:');
+        this._logWithIndent(2, `Resources (${r.resources.length}):`);
         for (const resource of r.resources) {
           this._logWithIndent(3, resource.id);
         }
