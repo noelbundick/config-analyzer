@@ -51,12 +51,13 @@ USAGE
   $ aza scan
 
 OPTIONS
-  -d, --dummy                    runs dummy rules to mock multi rule system
-  -h, --help                     show CLI help
-  -r, --rule=rule                rules to execute
-  -s, --scope=scope              azure subscription id to scan
-  -v, --verbose                  prints all results
-  --resourceGroup=resourceGroup  azure subscription id to scan
+  -d, --dummy        runs dummy rules to mock multi rule system
+  -g, --group=group  azure subscription id to scan
+  -h, --help         show CLI help
+  -r, --rule=rule    rules to execute
+  -s, --scope=scope  azure subscription id to scan
+  -v, --verbose      prints all results
+  --debug            prints debugging logs
 
 EXAMPLE
   $ aza scan --scope <SCOPE>
