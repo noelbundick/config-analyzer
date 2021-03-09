@@ -18,8 +18,8 @@ export default class Scan extends Command {
         Resources:
                 [resource-ids]
 
-    [number-passing]
-    [number-failing]
+    [total-passing]
+    [total-failing]
     [total-rules-scanned]   
 `,
   ];
