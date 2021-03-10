@@ -31,10 +31,11 @@ describe('Scan Unit Tests', function () {
     .stdout()
     .command(['scan'])
     .exit(2)
-    .it(
-      'exits with error code 2 when running scan without a flag',
-      ({stdout}) => {
-        expect(stdout).to.equal('');
-      }
-    );
+    .it('exits with error code 2 when running scan without a flag');
+  test
+    .stdout()
+    .stderr()
+    .command(['scan', '--scope'])
+    .exit(2)
+    .it('exits with error code 2 when running scan --scope without a value');
 });
