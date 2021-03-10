@@ -68,19 +68,18 @@ export default class Scan extends Command {
   }
 
   private printResult(result: ScanResult) {
-    const redX = '\u274c';
-    const greenCheck = chalk.green('\u2713');
     const totalResources = result.resourceIds.length;
-    const description = chalk.grey(result.description);
     this.log(result.ruleName, {bold: true, indent: 4});
     if (result.total) {
-      this.log(`${redX} ${description}`, {indent: 6});
+      this.log(`❌ ${result.description}`, {color: 'grey', indent: 6});
       this.log(`Resources (${totalResources}):`, {indent: 6});
       for (const id of result.resourceIds) {
         this.log(id, {indent: 8});
       }
     } else {
-      this.log(`${greenCheck} ${description}`, {indent: 6});
+      this.log(`${chalk.green('✓')} ${chalk.grey(result.description)}`, {
+        indent: 6,
+      });
     }
     this.log('');
   }
