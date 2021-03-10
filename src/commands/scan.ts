@@ -132,7 +132,6 @@ export default class Scan extends Command {
       this.error('Command scan expects a Flag');
     }
 
-    console.log(flags.file);
     await scanner.loadRulesFromFile(flags.file);
     cli.action.start('Scanning');
     const results = await scanner.scan(target);
