@@ -68,11 +68,10 @@ export default class Scan extends Command {
   }
 
   private printResult(result: ScanResult) {
-    const totalResources = result.resourceIds.length;
     this.log(result.ruleName, {bold: true, indent: 4});
     if (result.total) {
       this.log(`❌ ${result.description}`, {color: 'grey', indent: 6});
-      this.log(`Resources (${totalResources}):`, {indent: 6});
+      this.log(`Resources (${result.total}):`, {indent: 6});
       for (const id of result.resourceIds) {
         this.log(id, {indent: 8});
       }
