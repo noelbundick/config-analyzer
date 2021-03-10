@@ -27,4 +27,14 @@ describe('Scan Unit Tests', function () {
       expect(ctx.stdout).to.not.contain('0 failing');
       expect(ctx.stdout).to.contain('2 scanned');
     });
+  test
+    .stdout()
+    .command(['scan'])
+    .exit(2)
+    .it(
+      'exits with error code 2 when running scan without a flag',
+      ({stdout}) => {
+        expect(stdout).to.equal('');
+      }
+    );
 });
