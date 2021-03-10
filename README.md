@@ -10,7 +10,7 @@ $ npm install -g aza
 $ aza COMMAND
 running command...
 $ aza (-v|--version|version)
-aza/0.0.0 linux-x64 node-v14.15.5
+aza/0.0.0 win32-x64 node-v14.15.4
 $ aza --help [COMMAND]
 USAGE
   $ aza COMMAND
@@ -22,6 +22,7 @@ USAGE
 
 <!-- commands -->
 * [`aza hello [FILE]`](#aza-hello-file)
+* [`aza scan`](#aza-scan)
 
 ## `aza hello [FILE]`
 
@@ -39,6 +40,34 @@ OPTIONS
 EXAMPLE
   $ ./bin/run hello
   hello world from ./src/hello.ts!
+```
+
+## `aza scan`
+
+Scans Azure resources for potential configuration issues
+
+```
+USAGE
+  $ aza scan
+
+OPTIONS
+  -d, --dummy        runs dummy rules to mock multi rule system
+  -f, --file=file    JSON rules file path
+  -h, --help         show CLI help
+  -s, --scope=scope  Azure subscription id to scan
+  -v, --verbose      prints all results
+  --debug            prints debugging logs
+
+EXAMPLE
+  $ aza scan --scope <SCOPE>
+       [rule-name]
+           [✓ | ❌][rule-description]     
+           Resources:
+                   [resource-ids]
+
+       [total-passing]
+       [total-failing]
+       [total-rules-scanned]
 ```
 <!-- commandsstop -->
 
