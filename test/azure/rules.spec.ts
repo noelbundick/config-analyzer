@@ -8,8 +8,8 @@ import {
 import {subscriptionId} from '.';
 
 describe('Resource Graph Rule', function () {
-  this.slow(5000);
-  this.timeout(8000);
+  this.slow(6000);
+  this.timeout(10000);
 
   it('can execute a resource graph rule and return a scan result', async () => {
     const query =
