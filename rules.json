@@ -2,19 +2,19 @@
   {
     "name": "Mock Rule - Get VMs",
     "description": "Get all virtual Machines in a subscription",
-    "type": "resourceGraph",
+    "type": "ResourceGraph",
     "query": "Resources | where type =~ 'Microsoft.Compute/virtualMachines'"
   },
   {
     "name": "Mock Rule - Get Storage Accounts",
     "description": "Get all storage accounts in a subscription",
-    "type": "resourceGraph",
+    "type": "ResourceGraph",
     "query": "Resources | where type =~ 'Microsoft.Storage/storageAccounts'"
   },
   {
     "name": "Dummy Mock Rule",
     "description": "Mocks a multiple rule system",
-    "type": "dummy",
+    "type": "Dummy",
     "context": {"message": "I don't do anything"}
   }
 ]
