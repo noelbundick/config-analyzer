@@ -21,26 +21,7 @@ USAGE
 # Commands
 
 <!-- commands -->
-* [`aza hello [FILE]`](#aza-hello-file)
 * [`aza scan`](#aza-scan)
-
-## `aza hello [FILE]`
-
-describe the command here
-
-```
-USAGE
-  $ aza hello [FILE]
-
-OPTIONS
-  -f, --force
-  -h, --help       show CLI help
-  -n, --name=name  name to print
-
-EXAMPLE
-  $ ./bin/run hello
-  hello world from ./src/hello.ts!
-```
 
 ## `aza scan`
 
