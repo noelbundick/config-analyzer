@@ -1,6 +1,8 @@
 import {expect, test} from '@oclif/test';
 
-describe('hello', () => {
+describe('hello', function () {
+  this.slow(3000);
+  this.timeout(5000);
   test
     .stdout()
     .command(['hello'])

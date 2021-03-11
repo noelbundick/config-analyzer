@@ -3,32 +3,48 @@ import {DefaultAzureCredential} from '@azure/identity';
 import {AzureClient} from './azure';
 import {ScanResult} from './scanner';
 
-export type Rule = IResourceGraphRule | IDummyRule;
+export type Rule = ResourceGraphRule | DummyRule;
+export type Target = ResourceGraphTarget | DummyTarget;
+
+export enum RuleType {
+  ResourceGraph = 'ResourceGraph',
+  Dummy = 'Dummy',
+}
 
 interface BaseRule {
   name: string;
   description: string;
-  type: string;
+  type: RuleType;
 }
 
-export interface IResourceGraphRule extends BaseRule {
-  type: 'resourceGraph';
+export interface ResourceGraphRule extends BaseRule {
+  type: RuleType.ResourceGraph;
   query: string;
 }
 
-export interface IDummyRule extends BaseRule {
-  type: 'dummy';
+export interface ResourceGraphTarget {
+  type: RuleType.ResourceGraph;
+  subscriptionId: string;
+}
+
+export interface DummyTarget {
+  type: RuleType.Dummy;
   context: object;
 }
 
-export class DummyRule {
-  static execute(rules: IDummyRule[]) {
+export interface DummyRule extends BaseRule {
+  type: RuleType.Dummy;
+  context: object;
+}
+
+export class DummyRuleExecutor {
+  static execute(rules: DummyRule[]) {
     const results = rules.map(r => {
       return Promise.resolve({
         ruleName: r.name,
         description: r.description,
         total: 0,
-        ids: [],
+        resourceIds: [],
       }) as Promise<ScanResult>;
     });
     return Promise.all(results);
@@ -40,12 +56,17 @@ interface ResourceGraphQueryResponseColumn {
   type: string | object;
 }
 
-export class ResourceGraphRule {
-  static async execute(rules: IResourceGraphRule[], subscriptionId: string) {
+export class ResourceGraphExecutor {
+  static async execute(
+    rules: ResourceGraphRule[],
+    target: ResourceGraphTarget
+  ) {
     const credential = new DefaultAzureCredential();
     const client = new AzureClient(credential);
     const results = rules.map(async r => {
-      const resources = await client.queryResources(r.query, [subscriptionId]);
+      const resources = await client.queryResources(r.query, [
+        target.subscriptionId,
+      ]);
       return this._toScanResult(resources, r);
     });
     return Promise.all(results);
@@ -53,7 +74,7 @@ export class ResourceGraphRule {
 
   private static _toScanResult(
     response: ResourceGraphModels.ResourcesResponse,
-    rule: IResourceGraphRule
+    rule: ResourceGraphRule
   ): ScanResult {
     const cols = response.data.columns as ResourceGraphQueryResponseColumn[];
     const rows = response.data.rows as string[];
@@ -63,7 +84,7 @@ export class ResourceGraphRule {
       ruleName: rule.name,
       description: rule.description,
       total: response.totalRecords,
-      ids: resourceIds,
+      resourceIds,
     };
     return scanResult;
   }

@@ -1,23 +1,32 @@
 import {assert} from 'chai';
-import {Rule, ResourceGraphRule} from '../../src/rules';
+import {
+  ResourceGraphRule,
+  ResourceGraphExecutor,
+  ResourceGraphTarget,
+  RuleType,
+} from '../../src/rules';
 import {subscriptionId} from '.';
 
 describe('Resource Graph Rule', function () {
-  this.slow(5000);
-  this.timeout(8000);
+  this.slow(6000);
+  this.timeout(10000);
 
   it('can execute a resource graph rule and return a scan result', async () => {
     const query =
       "Resources | where type =~ 'Microsoft.Compute/virtualMachines2'";
-    const name = 'Dummy Rule';
+    const name = 'test-rule';
     const description = 'Intentional bad query';
-    const rule: Rule = {
+    const rule: ResourceGraphRule = {
       name,
       query,
       description,
-      type: 'resourceGraph',
+      type: RuleType.ResourceGraph,
     };
-    const results = await ResourceGraphRule.execute([rule], subscriptionId);
+    const target: ResourceGraphTarget = {
+      type: RuleType.ResourceGraph,
+      subscriptionId,
+    };
+    const results = await ResourceGraphExecutor.execute([rule], target);
     for (const result of results) {
       assert.equal(rule.name, result.ruleName);
       assert.equal(rule.description, result.description);
@@ -25,9 +34,9 @@ describe('Resource Graph Rule', function () {
         'ruleName',
         'description',
         'total',
-        'ids',
+        'resourceIds',
       ]);
-      assert.equal(result.total, 0);
+      assert.isAtLeast(result.total, 0);
     }
   });
 });
