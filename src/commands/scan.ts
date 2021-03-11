@@ -1,14 +1,9 @@
 import {Command, flags} from '@oclif/command';
 import {Scanner, ScanResult} from '../scanner';
 import {ResourceGraphTarget, DummyTarget, Target, RuleType} from '../rules';
+import {format, LogOptions} from './helper';
 import cli from 'cli-ux';
 import chalk = require('chalk');
-
-interface LogOptions {
-  color?: string;
-  indent?: number;
-  bold?: boolean;
-}
 
 export default class Scan extends Command {
   private isDebugMode = false;
@@ -54,16 +49,7 @@ export default class Scan extends Command {
   };
 
   public log(message: string, options?: LogOptions) {
-    let formattedMessage = message;
-    if (options?.color) {
-      formattedMessage = chalk.keyword(options.color)(formattedMessage);
-    }
-    if (options?.indent) {
-      formattedMessage = ' '.repeat(options.indent) + formattedMessage;
-    }
-    if (options?.bold) {
-      formattedMessage = chalk.bold(formattedMessage);
-    }
+    const formattedMessage = format(message, options);
     super.log(formattedMessage);
   }
 
@@ -90,11 +76,9 @@ export default class Scan extends Command {
     this.log(`${totalPassed} passing`, {
       color: 'green',
     });
-    if (this.isVerbose) {
-      this.log(`${totalFailed} failing`, {
-        color: 'red',
-      });
-    }
+    this.log(`${totalFailed} failing`, {
+      color: 'red',
+    });
     this.log(`${total} scanned`);
   }
 
