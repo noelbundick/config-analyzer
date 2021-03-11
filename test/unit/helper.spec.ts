@@ -1,5 +1,5 @@
 import {expect} from 'chai';
-import {format} from '../../../src/commands/helper';
+import {format} from '../../src/commandHelper';
 
 describe('Command Helper', () => {
   it('should format text with indents', () => {

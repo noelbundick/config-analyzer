@@ -1,7 +1,7 @@
 import {Command, flags} from '@oclif/command';
 import {Scanner, ScanResult} from '../scanner';
 import {ResourceGraphTarget, DummyTarget, Target, RuleType} from '../rules';
-import {format, LogOptions} from './helper';
+import {format, LogOptions} from '../commandHelper';
 import cli from 'cli-ux';
 import chalk = require('chalk');
 
