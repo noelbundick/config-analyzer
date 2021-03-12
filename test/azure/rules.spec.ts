@@ -11,13 +11,12 @@ describe('Resource Graph Rule', function () {
   this.timeout(10000);
 
   it('can execute a resource graph rule and return a scan result', async () => {
-    const ruleData = {
+    const rule = new ResourceGraphRule({
       name: 'test-rule',
       description: 'Intentional bad query',
       query: "Resources | where type =~ 'Microsoft.Compute/virtualMachines2'",
-      type: RuleType.ResourceGraph as RuleType.ResourceGraph,
-    };
-    const rule = new ResourceGraphRule(ruleData);
+      type: RuleType.ResourceGraph,
+    });
     const target: ResourceGraphTarget = {
       type: RuleType.ResourceGraph,
       subscriptionId,
