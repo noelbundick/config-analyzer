@@ -2,6 +2,7 @@ import {assert} from 'chai';
 import {Scanner} from '../../src/scanner';
 import {subscriptionId} from '.';
 import {ResourceGraphTarget, RuleType} from '../../src/rules';
+import {DefaultAzureCredential} from '@azure/identity';
 
 describe('Scanner', function () {
   this.slow(5000);
@@ -10,6 +11,7 @@ describe('Scanner', function () {
     const target: ResourceGraphTarget = {
       type: RuleType.ResourceGraph,
       subscriptionId,
+      credential: new DefaultAzureCredential(),
     };
     const scanner = new Scanner();
     await scanner.loadRulesFromFile('../test/rules.json');
