@@ -1,9 +1,5 @@
 import {expect} from 'chai';
-import {
-  ResourceGraphRule,
-  ResourceGraphExecutor,
-  RuleType,
-} from '../../src/rules';
+import {ResourceGraphRule, RuleType} from '../../src/rules';
 import {ResourceGraphModels} from '@azure/arm-resourcegraph';
 import {HttpHeadersLike, WebResourceLike} from '@azure/ms-rest-js';
 
@@ -21,28 +17,24 @@ describe('Resource Graph Rule', () => {
       parsedBody: {} as ResourceGraphModels.QueryResponse,
     },
   };
-  const mockRule: ResourceGraphRule = {
+  const rule = new ResourceGraphRule({
     name: 'test-rule',
     query: 'mock query',
     description: 'Intentional bad query',
     type: RuleType.ResourceGraph,
-  };
+  });
   it('can produce a scan result', async () => {
-    const scanResult = ResourceGraphExecutor.toScanResult(
-      mockResourcesResponse,
-      mockRule
-    );
+    const scanResult = rule.toScanResult(mockResourcesResponse);
     expect(scanResult).to.deep.equal({
-      ruleName: mockRule.name,
-      description: mockRule.description,
+      ruleName: rule.name,
+      description: rule.description,
       total: 1,
       resourceIds: ['mockResourceId'],
     });
   });
   it("should throw an errow if the 'id' column is not returned from Resource Graph", async () => {
     mockResourcesResponse.data.columns = [];
-    const iThrowError = () =>
-      ResourceGraphExecutor.toScanResult(mockResourcesResponse, mockRule);
+    const iThrowError = () => rule.toScanResult(mockResourcesResponse);
     expect(iThrowError).to.throw(
       Error,
       'Id column was not returned from Azure Resource Graph'
