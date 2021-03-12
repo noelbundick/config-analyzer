@@ -1,9 +1,8 @@
 import {
-  ResourceGraphExecutor,
   ResourceGraphRule,
   ResourceGraphTarget,
   Rule,
-  DummyRuleExecutor,
+  DummyTarget,
   DummyRule,
   Target,
   RuleType,
@@ -23,7 +22,9 @@ export class Scanner {
 
   async scan(target: Target) {
     if (!this.rules.length) await this.loadRulesFromFile();
-    return this.executeRules(target);
+    const filteredRules = this.rules.filter(r => r.type === target.type);
+    const results = this.execute(filteredRules, target);
+    return Promise.all(results);
   }
 
   async loadRulesFromFile(filePath = '../rules.json') {
@@ -32,18 +33,16 @@ export class Scanner {
     this.rules = JSON.parse(data);
   }
 
-  private executeRules(target: Target) {
-    const filteredRules = this.rules.filter(r => r.type === target.type);
-    switch (target.type) {
-      case RuleType.ResourceGraph: {
-        return ResourceGraphExecutor.execute(
-          filteredRules as ResourceGraphRule[],
-          target as ResourceGraphTarget
-        );
+  execute(rules: Rule[], target: Target) {
+    return rules.map(r => {
+      switch (r.type) {
+        case RuleType.ResourceGraph:
+          r = new ResourceGraphRule(r);
+          return r.execute(target as ResourceGraphTarget);
+        case RuleType.Dummy:
+          r = new DummyRule(r);
+          return r.execute(target as DummyTarget);
       }
-      case RuleType.Dummy: {
-        return DummyRuleExecutor.execute(filteredRules as DummyRule[]);
-      }
-    }
+    });
   }
 }

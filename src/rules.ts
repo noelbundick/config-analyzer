@@ -11,15 +11,11 @@ export enum RuleType {
   Dummy = 'Dummy',
 }
 
-interface BaseRule {
+export interface BaseRule<T> {
   name: string;
   description: string;
   type: RuleType;
-}
-
-export interface ResourceGraphRule extends BaseRule {
-  type: RuleType.ResourceGraph;
-  query: string;
+  execute?: (target: T) => Promise<ScanResult>;
 }
 
 export interface ResourceGraphTarget {
@@ -32,22 +28,32 @@ export interface DummyTarget {
   context: object;
 }
 
-export interface DummyRule extends BaseRule {
+export class DummyRule implements BaseRule<DummyTarget> {
   type: RuleType.Dummy;
+  name: string;
+  description: string;
   context: object;
-}
 
-export class DummyRuleExecutor {
-  static execute(rules: DummyRule[]) {
-    const results = rules.map(r => {
-      return Promise.resolve({
-        ruleName: r.name,
-        description: r.description,
-        total: 0,
-        resourceIds: [],
-      }) as Promise<ScanResult>;
-    });
-    return Promise.all(results);
+  constructor(rule: {
+    type: RuleType.Dummy;
+    name: string;
+    description: string;
+    context: object;
+  }) {
+    this.type = rule.type;
+    this.name = rule.name;
+    this.description = rule.description;
+    this.context = rule.context;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  execute(_: DummyTarget) {
+    return Promise.resolve({
+      ruleName: this.name,
+      description: this.description,
+      total: 0,
+      resourceIds: [],
+    }) as Promise<ScanResult>;
   }
 }
 
@@ -56,26 +62,34 @@ interface ResourceGraphQueryResponseColumn {
   type: string | object;
 }
 
-export class ResourceGraphExecutor {
-  static async execute(
-    rules: ResourceGraphRule[],
-    target: ResourceGraphTarget
-  ) {
-    const credential = new DefaultAzureCredential();
-    const client = new AzureClient(credential);
-    const results = rules.map(async r => {
-      const resources = await client.queryResources(r.query, [
-        target.subscriptionId,
-      ]);
-      return this.toScanResult(resources, r);
-    });
-    return Promise.all(results);
+export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
+  type: RuleType.ResourceGraph;
+  name: string;
+  description: string;
+  query: string;
+  static credential = new DefaultAzureCredential();
+  static client = new AzureClient(ResourceGraphRule.credential);
+
+  constructor(rule: {
+    type: RuleType.ResourceGraph;
+    name: string;
+    description: string;
+    query: string;
+  }) {
+    this.type = rule.type;
+    this.name = rule.name;
+    this.description = rule.description;
+    this.query = rule.query;
   }
 
-  static toScanResult(
-    response: ResourceGraphModels.ResourcesResponse,
-    rule: ResourceGraphRule
-  ): ScanResult {
+  async execute(target: ResourceGraphTarget) {
+    const response = await ResourceGraphRule.client.queryResources(this.query, [
+      target.subscriptionId,
+    ]);
+    return this.toScanResult(response);
+  }
+
+  toScanResult(response: ResourceGraphModels.ResourcesResponse): ScanResult {
     const cols = response.data.columns as ResourceGraphQueryResponseColumn[];
     const rows = response.data.rows as string[];
     const idIndex = cols.findIndex(c => c.name === 'id');
@@ -84,8 +98,8 @@ export class ResourceGraphExecutor {
     }
     const resourceIds = rows.map(r => r[idIndex]);
     const scanResult = {
-      ruleName: rule.name,
-      description: rule.description,
+      ruleName: this.name,
+      description: this.description,
       total: response.totalRecords,
       resourceIds,
     };
