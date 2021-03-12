@@ -12,14 +12,10 @@ describe('Resource Graph Rule', function () {
   this.timeout(10000);
 
   it('can execute a resource graph rule and return a scan result', async () => {
-    const query =
-      "Resources | where type =~ 'Microsoft.Compute/virtualMachines2'";
-    const name = 'test-rule';
-    const description = 'Intentional bad query';
     const rule: ResourceGraphRule = {
-      name,
-      query,
-      description,
+      name: 'test-rule',
+      query: "Resources | where type =~ 'Microsoft.Compute/virtualMachines2'",
+      description: 'Intentional bad query',
       type: RuleType.ResourceGraph,
     };
     const target: ResourceGraphTarget = {
@@ -36,7 +32,7 @@ describe('Resource Graph Rule', function () {
         'total',
         'resourceIds',
       ]);
-      assert.isAtLeast(result.total, 0);
+      assert.equal(result.total, 0);
     }
   });
 });

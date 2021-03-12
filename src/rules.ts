@@ -67,18 +67,21 @@ export class ResourceGraphExecutor {
       const resources = await client.queryResources(r.query, [
         target.subscriptionId,
       ]);
-      return this._toScanResult(resources, r);
+      return this.toScanResult(resources, r);
     });
     return Promise.all(results);
   }
 
-  private static _toScanResult(
+  static toScanResult(
     response: ResourceGraphModels.ResourcesResponse,
     rule: ResourceGraphRule
   ): ScanResult {
     const cols = response.data.columns as ResourceGraphQueryResponseColumn[];
     const rows = response.data.rows as string[];
     const idIndex = cols.findIndex(c => c.name === 'id');
+    if (idIndex === -1) {
+      throw new Error('Id column was not returned from Azure Resource Graph');
+    }
     const resourceIds = rows.map(r => r[idIndex]);
     const scanResult = {
       ruleName: rule.name,
