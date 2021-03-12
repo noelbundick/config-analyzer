@@ -3,7 +3,7 @@ import {subscriptionId} from '..';
 import {RuleType} from '../../../src/rules';
 import {Scanner} from '../../../src/scanner';
 
-describe('Scan Unit Tests', function () {
+describe('Scan Integration Tests', function () {
   this.slow(3000);
   this.timeout(5000);
   test
