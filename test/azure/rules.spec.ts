@@ -5,6 +5,7 @@ import {
   RuleType,
 } from '../../src/rules';
 import {subscriptionId} from '.';
+import {DefaultAzureCredential} from '@azure/identity';
 
 describe('Resource Graph Rule', function () {
   this.slow(6000);
@@ -20,6 +21,7 @@ describe('Resource Graph Rule', function () {
     const target: ResourceGraphTarget = {
       type: RuleType.ResourceGraph,
       subscriptionId,
+      credential: new DefaultAzureCredential(),
     };
     const result = await rule.execute(target);
     assert.equal(rule.name, result.ruleName);

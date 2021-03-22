@@ -1,9 +1,10 @@
 import {Command, flags} from '@oclif/command';
 import {Scanner, ScanResult} from '../scanner';
-import {ResourceGraphTarget, DummyTarget, Target, RuleType} from '../rules';
+import {Target, RuleType} from '../rules';
 import {format, LogOptions} from '../commandHelper';
 import cli from 'cli-ux';
 import chalk = require('chalk');
+import {DefaultAzureCredential} from '@azure/identity';
 
 export default class Scan extends Command {
   private isDebugMode = false;
@@ -107,9 +108,10 @@ export default class Scan extends Command {
       target = {
         type: RuleType.ResourceGraph,
         subscriptionId: flags.scope,
-      } as ResourceGraphTarget;
+        credential: new DefaultAzureCredential(),
+      };
     } else if (flags.dummy) {
-      target = {type: RuleType.Dummy, context: {}} as DummyTarget;
+      target = {type: RuleType.Dummy, context: {}};
     } else {
       this.error('Command scan expects a Flag');
     }

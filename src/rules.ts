@@ -21,6 +21,7 @@ export interface BaseRule<T> {
 export interface ResourceGraphTarget {
   type: RuleType.ResourceGraph;
   subscriptionId: string;
+  credential: DefaultAzureCredential;
 }
 
 export interface DummyTarget {
@@ -67,8 +68,6 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
   name: string;
   description: string;
   query: string;
-  static credential = new DefaultAzureCredential();
-  static client = new AzureClient(ResourceGraphRule.credential);
 
   constructor(rule: {
     type: RuleType.ResourceGraph;
@@ -83,7 +82,8 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
   }
 
   async execute(target: ResourceGraphTarget) {
-    const response = await ResourceGraphRule.client.queryResources(this.query, [
+    const client = new AzureClient(target.credential);
+    const response = await client.queryResources(this.query, [
       target.subscriptionId,
     ]);
     return this.toScanResult(response);
