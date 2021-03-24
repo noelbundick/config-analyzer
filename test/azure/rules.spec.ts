@@ -20,7 +20,7 @@ describe('Resource Graph Rule', function () {
     });
     const target: ResourceGraphTarget = {
       type: RuleType.ResourceGraph,
-      subscriptionId,
+      subscriptionIds: [subscriptionId],
       credential: new DefaultAzureCredential(),
     };
     const result = await rule.execute(target);

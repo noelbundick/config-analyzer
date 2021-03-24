@@ -31,6 +31,13 @@ export default class Scan extends Command {
     scope: flags.string({
       char: 's',
       description: 'Azure subscription id to scan',
+      multiple: true,
+    }),
+    groups: flags.string({
+      char: 'g',
+      description: 'Azure resource groups to scan',
+      multiple: true,
+      dependsOn: ['scope'],
     }),
     dummy: flags.boolean({
       char: 'd',
@@ -107,7 +114,8 @@ export default class Scan extends Command {
     if (flags.scope) {
       target = {
         type: RuleType.ResourceGraph,
-        subscriptionId: flags.scope,
+        subscriptionIds: flags.scope,
+        groupNames: flags.groups,
         credential: new DefaultAzureCredential(),
       };
     } else if (flags.dummy) {

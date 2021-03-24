@@ -20,8 +20,9 @@ export interface BaseRule<T> {
 
 export interface ResourceGraphTarget {
   type: RuleType.ResourceGraph;
-  subscriptionId: string;
+  subscriptionIds: string[];
   credential: DefaultAzureCredential;
+  groupNames?: string[];
 }
 
 export interface DummyTarget {
@@ -83,10 +84,35 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
 
   async execute(target: ResourceGraphTarget) {
     const client = new AzureClient(target.credential);
-    const response = await client.queryResources(this.query, [
-      target.subscriptionId,
-    ]);
+    let response;
+    if (target.groupNames) {
+      const modifiedQuery = this.getQueryByGroups(target.groupNames);
+      response = await client.queryResources(
+        modifiedQuery,
+        target.subscriptionIds
+      );
+    } else {
+      response = await client.queryResources(
+        this.query,
+        target.subscriptionIds
+      );
+    }
     return this.toScanResult(response);
+  }
+
+  getQueryByGroups(groupNames: string[]) {
+    const formattedGroups = groupNames.map(name => `'${name}'`).join(', ');
+    const groupQuery = `Resources | where resourceGroup in~ (${formattedGroups}) |`;
+    const startsWithResources = this.query
+      .toLowerCase()
+      .startsWith('resources |');
+    let newQuery;
+    if (startsWithResources) {
+      newQuery = `${groupQuery} ${this.query.slice(12)}`;
+    } else {
+      newQuery = `${groupQuery} ${this.query}`;
+    }
+    return newQuery;
   }
 
   toScanResult(response: ResourceGraphModels.ResourcesResponse): ScanResult {

@@ -10,7 +10,7 @@ describe('Scanner', function () {
   it('can execute resource graph rules', async () => {
     const target: ResourceGraphTarget = {
       type: RuleType.ResourceGraph,
-      subscriptionId,
+      subscriptionIds: [subscriptionId],
       credential: new DefaultAzureCredential(),
     };
     const scanner = new Scanner();

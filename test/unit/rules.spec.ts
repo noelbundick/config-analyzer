@@ -46,4 +46,30 @@ describe('Resource Graph Rule', () => {
       'Id column was not returned from Azure Resource Graph'
     );
   });
+  it("can modify a query that does not start with 'Resources |' to include resource groups", () => {
+    const rule = new ResourceGraphRule({
+      name: 'test-rule',
+      query: "Resources | where type =~ 'Microsoft.Network/virtualNetworks'",
+      description: 'Intentional bad query',
+      type: RuleType.ResourceGraph,
+    });
+    const groupNames = ['group1', 'group2', 'group3'];
+    const modifiedQuery = rule.getQueryByGroups(groupNames);
+    const expectedQuery =
+      "Resources | where resourceGroup in~ ('group1', 'group2', 'group3') | where type =~ 'Microsoft.Network/virtualNetworks'";
+    expect(modifiedQuery).to.equal(expectedQuery);
+  });
+  it("can modify a query that does not start with 'Resources |' to include resource groups", () => {
+    const rule = new ResourceGraphRule({
+      name: 'test-rule',
+      query: "where type =~ 'Microsoft.Network/virtualNetworks'",
+      description: 'Intentional bad query',
+      type: RuleType.ResourceGraph,
+    });
+    const groupNames = ['group1', 'group2', 'group3'];
+    const modifiedQuery = rule.getQueryByGroups(groupNames);
+    const expectedQuery =
+      "Resources | where resourceGroup in~ ('group1', 'group2', 'group3') | where type =~ 'Microsoft.Network/virtualNetworks'";
+    expect(modifiedQuery).to.equal(expectedQuery);
+  });
 });
