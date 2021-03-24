@@ -28,3 +28,7 @@ export const resourceGroup = env
   .get(environment.resourceGroup)
   .default(defaultResourceGroup)
   .asString();
+export const resourceGroup2 = env
+  .get(environment.resourceGroup2)
+  .default(defaultResourceGroup + '-2')
+  .asString();
