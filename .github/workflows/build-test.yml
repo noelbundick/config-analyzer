@@ -56,6 +56,7 @@ jobs:
         trigger: '@create-executables'
 
     - name: Create standalone executables
+      if: steps.check.outputs.triggered == 'true'          
       run: |
         npm ci --production --ignore-scripts
         npm i -g pkg
