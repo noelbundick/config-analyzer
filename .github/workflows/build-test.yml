@@ -50,6 +50,7 @@ jobs:
           pkg-
 
     - name: Trigger standalone executables on pull request comment 
+      if: ${{ github.event_name == 'pull_request' }}
       uses: khan/pull-request-comment-trigger@master
       id: check
       with:
