@@ -48,9 +48,9 @@ jobs:
 
     - name: Create standalone executables
       uses: khan/pull-request-comment-trigger@master
-            id: check
-            with:
-              trigger: '@do-not-create-executables'
+      id: check
+      with:
+        trigger: '@do-not-create-executables'
 
       if: steps.check.outputs.triggered == 'true'          
       run: |
