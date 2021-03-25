@@ -100,19 +100,38 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
     return this.toScanResult(response);
   }
 
+  static async getNonExisitingResourceGroups(target: ResourceGraphTarget) {
+    const nonExistingGroups: string[] = [];
+    if (target.groupNames) {
+      const client = new AzureClient(target.credential);
+      const query =
+        "ResourceContainers | where type =~ 'microsoft.resources/subscriptions/resourcegroups' | project name";
+      const response = await client.queryResources(query, [
+        target.subscriptionIds[0],
+      ]);
+      const existingGroupNames = response.data.rows.flat() as string[];
+      for (const g of target.groupNames) {
+        if (!existingGroupNames.includes(g)) {
+          nonExistingGroups.push(g);
+        }
+      }
+    }
+    return nonExistingGroups;
+  }
+
   getQueryByGroups(groupNames: string[]) {
     const formattedGroups = groupNames.map(name => `'${name}'`).join(', ');
-    const groupQuery = `Resources | where resourceGroup in~ (${formattedGroups}) |`;
-    const startsWithResources = this.query
-      .toLowerCase()
-      .startsWith('resources |');
-    let newQuery;
-    if (startsWithResources) {
-      newQuery = `${groupQuery} ${this.query.slice(12)}`;
+    const groupQuery = `| where resourceGroup in~ (${formattedGroups})`;
+    const firstPipeIndex = this.query.indexOf('|');
+    if (firstPipeIndex === -1) {
+      // while it is a Microsoft recommendation to start Resource Graph queries with the table name,
+      // for this application it is a requirement in order to support filtering for resource groups in the query
+      throw Error("Invalid Query. All queries must start with '<tableName> |'");
     } else {
-      newQuery = `${groupQuery} ${this.query}`;
+      const initalTable = this.query.slice(0, firstPipeIndex - 1);
+      const queryEnding = this.query.slice(firstPipeIndex);
+      return `${initalTable} ${groupQuery} ${queryEnding}`;
     }
-    return newQuery;
   }
 
   toScanResult(response: ResourceGraphModels.ResourcesResponse): ScanResult {

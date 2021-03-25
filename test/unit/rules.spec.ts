@@ -46,7 +46,7 @@ describe('Resource Graph Rule', () => {
       'Id column was not returned from Azure Resource Graph'
     );
   });
-  it("can modify a query that does not start with 'Resources |' to include resource groups", () => {
+  it('can modify a query to target resource groups', () => {
     const rule = new ResourceGraphRule({
       name: 'test-rule',
       query: "Resources | where type =~ 'Microsoft.Network/virtualNetworks'",
@@ -59,17 +59,16 @@ describe('Resource Graph Rule', () => {
       "Resources | where resourceGroup in~ ('group1', 'group2', 'group3') | where type =~ 'Microsoft.Network/virtualNetworks'";
     expect(modifiedQuery).to.equal(expectedQuery);
   });
-  it("can modify a query that does not start with 'Resources |' to include resource groups", () => {
+  it('should throw an error when modfiying an invalid query', () => {
     const rule = new ResourceGraphRule({
       name: 'test-rule',
       query: "where type =~ 'Microsoft.Network/virtualNetworks'",
-      description: 'Intentional bad query',
+      description: 'Does not include the inital table name',
       type: RuleType.ResourceGraph,
     });
-    const groupNames = ['group1', 'group2', 'group3'];
-    const modifiedQuery = rule.getQueryByGroups(groupNames);
-    const expectedQuery =
-      "Resources | where resourceGroup in~ ('group1', 'group2', 'group3') | where type =~ 'Microsoft.Network/virtualNetworks'";
-    expect(modifiedQuery).to.equal(expectedQuery);
+    const groupNames = ['group1', 'group2'];
+    expect(() => rule.getQueryByGroups(groupNames)).to.throw(
+      "Invalid Query. All queries must start with '<tableName> |'"
+    );
   });
 });
