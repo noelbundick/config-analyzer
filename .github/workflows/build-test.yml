@@ -5,6 +5,9 @@ on:
   pull_request: 
     branches: 
       - main
+    types: [opened]
+  issue_comment:
+      types: [created]  
 
 jobs: 
   build: 
@@ -45,6 +48,12 @@ jobs:
         key: pkg-${{ hashFiles('**/package.json') }}
         restore-keys: |
           pkg-
+
+    - name: Trigger standalone executables on pull request comment 
+      uses: khan/pull-request-comment-trigger@master
+      id: check
+      with:
+        trigger: '@create-executables'
 
     - name: Create standalone executables
       run: |
