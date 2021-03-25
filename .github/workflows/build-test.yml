@@ -47,6 +47,12 @@ jobs:
           pkg-
 
     - name: Create standalone executables
+      uses: khan/pull-request-comment-trigger@master
+            id: check
+            with:
+              trigger: '@do-not-create-executables'
+
+      if: steps.check.outputs.triggered == 'true'          
       run: |
         npm ci --production --ignore-scripts
         npm i -g pkg
