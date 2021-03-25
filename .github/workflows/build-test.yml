@@ -50,7 +50,7 @@ jobs:
       uses: khan/pull-request-comment-trigger@master
       id: check
       with:
-        trigger: '@do-not-create-executables'
+        trigger: '@create-executables'
 
     - name: Create standalone executables
       if: steps.check.outputs.triggered == 'true'          
