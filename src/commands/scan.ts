@@ -1,6 +1,6 @@
 import {Command, flags} from '@oclif/command';
 import {Scanner, ScanResult} from '../scanner';
-import {Target, RuleType} from '../rules';
+import {Target, RuleType, ResourceGraphRule} from '../rules';
 import {format, LogOptions} from '../commandHelper';
 import cli from 'cli-ux';
 import chalk = require('chalk');
@@ -31,6 +31,13 @@ export default class Scan extends Command {
     scope: flags.string({
       char: 's',
       description: 'Azure subscription id to scan',
+      multiple: true,
+    }),
+    group: flags.string({
+      char: 'g',
+      description: 'Azure resource groups to scan',
+      multiple: true,
+      dependsOn: ['scope'],
     }),
     dummy: flags.boolean({
       char: 'd',
@@ -105,11 +112,27 @@ export default class Scan extends Command {
     if (flags.verbose) this.isVerbose = true;
     if (flags.debug) this.isDebugMode = true;
     if (flags.scope) {
+      if (flags.scope.length > 1 && flags.group) {
+        this.error(
+          'Only one subscription can be scanned when using Flag --group'
+        );
+      }
       target = {
         type: RuleType.ResourceGraph,
-        subscriptionId: flags.scope,
+        subscriptionIds: flags.scope,
+        groupNames: flags.group,
         credential: new DefaultAzureCredential(),
       };
+      if (flags.group) {
+        const nonExistingGroups = await ResourceGraphRule.getNonExisitingResourceGroups(
+          target
+        );
+        for (const g of nonExistingGroups) {
+          this.warn(
+            `Resource Group '${g}' does not exist in this subscription`
+          );
+        }
+      }
     } else if (flags.dummy) {
       target = {type: RuleType.Dummy, context: {}};
     } else {

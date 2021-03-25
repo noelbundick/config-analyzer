@@ -1,6 +1,12 @@
 import {ResourceManagementClient} from '@azure/arm-resources';
 import {AzureIdentityCredentialAdapter} from '../../src/azure';
-import {credential, resourceGroup, subscriptionId, testRegion} from '.';
+import {
+  credential,
+  resourceGroup,
+  resourceGroup2,
+  subscriptionId,
+  testRegion,
+} from '.';
 
 export async function provisionEnvironment() {
   const resourceClient = new ResourceManagementClient(
@@ -11,6 +17,9 @@ export async function provisionEnvironment() {
   await resourceClient.resourceGroups.createOrUpdate(resourceGroup, {
     location: testRegion,
   });
+  await resourceClient.resourceGroups.createOrUpdate(resourceGroup2, {
+    location: testRegion,
+  });
   await resourceClient.deployments.createOrUpdate(
     resourceGroup,
     resourceGroup,
@@ -18,6 +27,14 @@ export async function provisionEnvironment() {
       properties: {
         mode: 'Incremental',
         template: require('./templates/azuredeploy.json'),
+        parameters: {
+          resourceGroup2: {
+            value: resourceGroup2,
+          },
+          location: {
+            value: testRegion,
+          },
+        },
       },
     }
   );
@@ -29,6 +46,7 @@ export async function teardownEnvironment() {
     subscriptionId
   );
   await resourceClient.resourceGroups.beginDeleteMethod(resourceGroup);
+  await resourceClient.resourceGroups.beginDeleteMethod(resourceGroup2);
 }
 
 async function main() {

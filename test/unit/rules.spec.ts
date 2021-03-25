@@ -46,4 +46,29 @@ describe('Resource Graph Rule', () => {
       'Id column was not returned from Azure Resource Graph'
     );
   });
+  it('can modify a query to target resource groups', () => {
+    const rule = new ResourceGraphRule({
+      name: 'test-rule',
+      query: "Resources | where type =~ 'Microsoft.Network/virtualNetworks'",
+      description: 'Intentional bad query',
+      type: RuleType.ResourceGraph,
+    });
+    const groupNames = ['group1', 'group2', 'group3'];
+    const modifiedQuery = rule.getQueryByGroups(groupNames);
+    const expectedQuery =
+      "Resources | where resourceGroup in~ ('group1', 'group2', 'group3') | where type =~ 'Microsoft.Network/virtualNetworks'";
+    expect(modifiedQuery).to.equal(expectedQuery);
+  });
+  it('should throw an error when modfiying an invalid query', () => {
+    const rule = new ResourceGraphRule({
+      name: 'test-rule',
+      query: "where type =~ 'Microsoft.Network/virtualNetworks'",
+      description: 'Does not include the inital table name',
+      type: RuleType.ResourceGraph,
+    });
+    const groupNames = ['group1', 'group2'];
+    expect(() => rule.getQueryByGroups(groupNames)).to.throw(
+      "Invalid Query. All queries must start with '<tableName> |'"
+    );
+  });
 });

@@ -5,6 +5,9 @@ on:
   pull_request: 
     branches: 
       - main
+    types: [opened]
+  issue_comment:
+      types: [created]  
 
 jobs: 
   build: 
@@ -46,7 +49,14 @@ jobs:
         restore-keys: |
           pkg-
 
+    - name: Trigger standalone executables on pull request comment 
+      if: ${{ github.event_name == 'pull_request' }}
+      uses: khan/pull-request-comment-trigger@master
+      id: check
+      with:
+        trigger: 'create-executables'
     - name: Create standalone executables
+      if: ${{ github.event_name == 'pull_request' && steps.check.outputs.triggered == 'true'}}        
       run: |
         npm ci --production --ignore-scripts
         npm i -g pkg

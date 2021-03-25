@@ -1,6 +1,16 @@
 {
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
+  "parameters": {
+    "resourceGroup2": {
+      "defaultValue": "aza-resource-group-2",
+      "type": "string"
+    },
+    "location": {
+      "defaultValue": "westus",
+      "type": "string"
+    }
+  },
   "resources": [
     {
       "type": "Microsoft.Network/virtualNetworks",
@@ -11,6 +21,34 @@
         "addressSpace": {
           "addressPrefixes": [
             "10.0.0.0/8"
+          ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2019-10-01",
+      "name": "[parameters('resourceGroup2')]",
+      "resourceGroup": "[parameters('resourceGroup2')]",
+      "properties": {
+        "mode": "Incremental",
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "resources": [
+            {
+              "type": "Microsoft.Network/virtualNetworks",
+              "apiVersion": "2020-05-01",
+              "name": "vnet",
+              "location": "[parameters('location')]",
+              "properties": {
+                "addressSpace": {
+                  "addressPrefixes": [
+                    "10.0.0.0/8"
+                  ]
+                }
+              }
+            }
           ]
         }
       }
