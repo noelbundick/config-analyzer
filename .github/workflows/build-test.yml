@@ -47,7 +47,7 @@ jobs:
           pkg-
 
     - name: Trigger standalone executables on pull request comment 
-    - uses: khan/pull-request-comment-trigger@master
+      uses: khan/pull-request-comment-trigger@master
       id: check
       with:
         trigger: '@do-not-create-executables'
