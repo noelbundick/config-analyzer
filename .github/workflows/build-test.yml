@@ -7,7 +7,7 @@ on:
       - main
     types: [opened]
   issue_comment:
-      types: [created]  
+      types: [created, updated]  
 
 jobs: 
   build: 
