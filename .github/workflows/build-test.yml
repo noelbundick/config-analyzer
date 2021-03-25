@@ -56,7 +56,7 @@ jobs:
         trigger: '@do-not-create-executables'
 
     - name: Create standalone executables
-      if: ${{ github.event_name != 'push' && steps.check.outputs.triggered == 'false'}}        
+      if: ${{ github.event_name == 'pull_request' && steps.check.outputs.triggered == 'false'}}        
       run: |
         npm ci --production --ignore-scripts
         npm i -g pkg
