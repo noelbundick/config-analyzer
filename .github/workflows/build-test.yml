@@ -46,12 +46,13 @@ jobs:
         restore-keys: |
           pkg-
 
-    - name: Create standalone executables
-      uses: khan/pull-request-comment-trigger@master
+    - name: Trigger standalone executables on pull request comment 
+    - uses: khan/pull-request-comment-trigger@master
       id: check
       with:
         trigger: '@do-not-create-executables'
 
+    - name: Create standalone executables
       if: steps.check.outputs.triggered == 'true'          
       run: |
         npm ci --production --ignore-scripts
