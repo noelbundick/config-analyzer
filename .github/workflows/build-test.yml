@@ -5,6 +5,9 @@ on:
   pull_request: 
     branches: 
       - main
+    types: [opened]
+  issue_comment:
+      types: [created]  
 
 jobs: 
   build: 
@@ -48,6 +51,7 @@ jobs:
 
     - name: Trigger standalone executables on pull request comment 
       uses: khan/pull-request-comment-trigger@master
+      id: check
       with:
         trigger: '@create-executables'
 
