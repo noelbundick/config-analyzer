@@ -34,6 +34,7 @@ USAGE
 OPTIONS
   -d, --dummy        runs dummy rules to mock multi rule system
   -f, --file=file    JSON rules file path
+  -g, --group=group  Azure resource groups to scan
   -h, --help         show CLI help
   -s, --scope=scope  Azure subscription id to scan
   -v, --verbose      prints all results
