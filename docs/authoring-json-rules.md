@@ -32,10 +32,12 @@ see [Resource Graph Docs](https://docs.microsoft.com/en-us/azure/governance/reso
 }
 ```
 
-**Requirements**
+**Requirements**   
+
 All queries must start with '`tableName` |'. While it is a Microsoft recommendation to begin Resource Graph queries with the table name, it is not required and defaults to the Resource Table. However, for this application, this is a requirement to allow fir filtering Resource Groups. See [Resource Graph Tables](https://docs.microsoft.com/en-us/azure/governance/resource-graph/concepts/query-language#resource-graph-tables) for more information on tables.
 
-**Target**
+**Target**  
+
 Resource Graph rules are executed against a target and the target is generated from the CLI inputs. The application can scan Azure Resources across multiple subscriptions or a single subscription and optionally filter for resource groups.
 
 
@@ -48,6 +50,7 @@ interface ResourceGraphTarget {
 }
 ```
 
-*CLI Usage*
-aza scan --scope [subscriptionId1] --scope [subscriptionId2]
+**CLI Usage**  
+
+aza scan --scope [subscriptionId1] --scope [subscriptionId2]  
 aza scan --scope [subscriptionId] --group [resourceGroupName1] --group [resourceGroupName2]
