@@ -6,6 +6,7 @@ import {Scanner} from '../../../src/scanner';
 describe('Scan Integration Tests', function () {
   this.slow(3000);
   this.timeout(5000);
+  const nonExistingGroup = `i-should-exist-${Date.now()}-1`;
   const group1VNetId = `/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.Network/virtualNetworks/vnet`;
   const group2VNetId = `/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup2}/providers/Microsoft.Network/virtualNetworks/vnet`;
   test
@@ -36,8 +37,6 @@ describe('Scan Integration Tests', function () {
     .it(
       'runs scan -s [subscriptionId] -g [resourceGroup] -f ../test/rules.json',
       async ({stdout}) => {
-        const scanner = new Scanner();
-        await scanner.loadRulesFromFile('../test/rules.json');
         expect(stdout).to.contain(group1VNetId);
         expect(stdout).to.not.contain(group2VNetId);
       }
@@ -58,10 +57,28 @@ describe('Scan Integration Tests', function () {
     .it(
       'runs scan -s [subscriptionId] -g [resourceGroup1] -g [resourceGroup2] -f ../test/rules.json',
       async ({stdout}) => {
-        const scanner = new Scanner();
-        await scanner.loadRulesFromFile('../test/rules.json');
         expect(stdout).to.contain(group1VNetId);
         expect(stdout).to.contain(group2VNetId);
+      }
+    );
+  test
+    .stderr()
+    .command([
+      'scan',
+      '-s',
+      subscriptionId,
+      '-g',
+      nonExistingGroup,
+      '-g',
+      resourceGroup,
+      '-f',
+      '../test/rules.json',
+    ])
+    .it(
+      'should warn user of nonexisting resource groups in the subscription',
+      async ({stderr}) => {
+        expect(stderr).to.contain(nonExistingGroup);
+        expect(stderr).to.not.contain(resourceGroup);
       }
     );
 });
