@@ -1,15 +1,9 @@
 [
   {
-    "name": "Mock Rule - Get VMs",
-    "description": "Get all virtual Machines in a subscription",
+    "name": "accidental-public-storage",
+    "description": "Finds Storage Accounts with a Private Endpoint configured but the public endpoint is still enabled",
     "type": "ResourceGraph",
-    "query": "Resources | where type =~ 'Microsoft.Compute/virtualMachines'"
-  },
-  {
-    "name": "Mock Rule - Get Storage Accounts",
-    "description": "Get all storage accounts in a subscription",
-    "type": "ResourceGraph",
-    "query": "Resources | where type =~ 'Microsoft.Storage/storageAccounts'"
+    "query": "Resources | where type=~ 'Microsoft.Storage/storageAccounts' and isnotempty(properties.privateEndpointConnections[0]) and properties.networkAcls.defaultAction=~ 'Allow'"
   },
   {
     "name": "Dummy Mock Rule",
