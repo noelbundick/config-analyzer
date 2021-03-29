@@ -10,10 +10,6 @@ Rules are authored in JSON. Every rule contains metadata (`name`, `description`,
     "type": "type of rule",
   },
 ```
-*not yet implemented*: 
-
-- `recommendation`: 
-    - points the user to docs or proposed code changes when a rule is broken
 
 ### Rule Types
 - `type`: 'ResourceGraph'
@@ -34,11 +30,11 @@ see [Resource Graph Docs](https://docs.microsoft.com/en-us/azure/governance/reso
 
 **Requirements**   
 
-All queries must start with '`<tableName>` |'. While it is a Microsoft recommendation to begin Resource Graph queries with the table name, it is not required and defaults to the Resource Table. However, for this application, this is a requirement to allow fir filtering Resource Groups. See [Resource Graph Tables](https://docs.microsoft.com/en-us/azure/governance/resource-graph/concepts/query-language#resource-graph-tables) for more information on tables.
+All queries must start with '`<tableName>` |'. While it is a Microsoft recommendation to begin Resource Graph queries with the table name, it is not required and defaults to the Resource Table. However, for this application, this is a requirement to allow for filtering Resource Groups. See [Resource Graph Tables](https://docs.microsoft.com/en-us/azure/governance/resource-graph/concepts/query-language#resource-graph-tables) for more information on tables.
 
 **Target**  
 
-Resource Graph rules are executed against a target and the target is generated from the CLI input. The application can scan Azure Resources across multiple subscriptions or a single subscription and optionally filter for resource groups.
+The application can scan Azure Resources across multiple subscriptions or a single subscription and optionally filter for resource groups.
 
 **CLI Usage**  
 
