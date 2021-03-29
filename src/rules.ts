@@ -100,7 +100,7 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
     return this.toScanResult(response);
   }
 
-  static async getNonExisitingResourceGroups(target: ResourceGraphTarget) {
+  static async getNonExistingResourceGroups(target: ResourceGraphTarget) {
     const nonExistingGroups: string[] = [];
     if (target.groupNames) {
       const client = new AzureClient(target.credential);

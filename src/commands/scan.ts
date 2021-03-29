@@ -124,7 +124,7 @@ export default class Scan extends Command {
         credential: new DefaultAzureCredential(),
       };
       if (flags.group) {
-        const nonExistingGroups = await ResourceGraphRule.getNonExisitingResourceGroups(
+        const nonExistingGroups = await ResourceGraphRule.getNonExistingResourceGroups(
           target
         );
         for (const g of nonExistingGroups) {
