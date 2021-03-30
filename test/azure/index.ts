@@ -6,6 +6,7 @@ import {environment, IntegrationTestModes} from '../constants';
 export const testRegion = 'westus2';
 export const credential = new DefaultAzureCredential();
 export const credentialAdapter = new AzureIdentityCredentialAdapter(credential);
+export const blobStorageAccountName = 'azabhcf24jbcuxwo';
 
 const integrationTestMode = env
   .get(environment.runIntegrationTests)
