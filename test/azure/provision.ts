@@ -6,6 +6,7 @@ import {
   resourceGroup2,
   subscriptionId,
   testRegion,
+  keyVaultId,
 } from '.';
 
 export async function provisionEnvironment() {
@@ -33,6 +34,14 @@ export async function provisionEnvironment() {
           },
           location: {
             value: testRegion,
+          },
+          adminPasswordOrKey: {
+            reference: {
+              keyVault: {
+                id: keyVaultId,
+              },
+              secretName: 'DefaultAdminPasswordSecret',
+            },
           },
         },
       },
