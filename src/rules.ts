@@ -2,12 +2,18 @@ import {ResourceGraphModels} from '@azure/arm-resourcegraph';
 import {DefaultAzureCredential} from '@azure/identity';
 import {AzureClient} from './azure';
 import {ScanResult} from './scanner';
+import {ResourceManagementClient} from '@azure/arm-resources';
+import {credential} from '../test/azure';
+import {AzureIdentityCredentialAdapter} from './azure';
+import {ARMResource, EventHubNetworkRuleSet} from './index2';
+import _ = require('lodash');
 
-export type Rule = ResourceGraphRule | DummyRule;
-export type Target = ResourceGraphTarget | DummyTarget;
+export type Rule = ResourceGraphRule | DummyRule | ARMTemplateRule;
+export type Target = ResourceGraphTarget | DummyTarget | ARMTarget;
 
 export enum RuleType {
   ResourceGraph = 'ResourceGraph',
+  ARM = 'ARM',
   Dummy = 'Dummy',
 }
 
@@ -22,6 +28,12 @@ export interface ResourceGraphTarget {
   type: RuleType.ResourceGraph;
   subscriptionIds: string[];
   credential: DefaultAzureCredential;
+  groupNames?: string[];
+}
+
+export interface ARMTarget {
+  type: RuleType.ARM;
+  subscriptionId: string;
   groupNames?: string[];
 }
 
@@ -62,6 +74,78 @@ export class DummyRule implements BaseRule<DummyTarget> {
 interface ResourceGraphQueryResponseColumn {
   name: string;
   type: string | object;
+}
+
+export class ARMTemplateRule implements BaseRule<ARMTarget> {
+  type: RuleType.ARM;
+  resourceType: string;
+  name: string;
+  description: string;
+  allMustPass: boolean;
+  evaluations: {
+    path: string;
+    invalid: string | number;
+  }[];
+
+  constructor(rule: {
+    type: RuleType.ARM;
+    name: string;
+    description: string;
+    resourceType: string;
+    allMustPass: boolean;
+    evaluations: {
+      path: string;
+      invalid: string | number;
+    }[];
+  }) {
+    this.type = rule.type;
+    this.name = rule.name;
+    this.description = rule.description;
+    this.evaluations = rule.evaluations;
+    this.resourceType = rule.resourceType;
+    this.allMustPass = rule.allMustPass;
+  }
+
+  async execute(target: ARMTarget) {
+    const resourceClient = new ResourceManagementClient(
+      new AzureIdentityCredentialAdapter(credential),
+      target.subscriptionId
+    );
+    const response = await resourceClient.resourceGroups.exportTemplate(
+      'josh-trash',
+      {resources: ['*']}
+    );
+
+    const networkRuleSets = response.template.resources.filter(
+      (r: ARMResource) => r.type === this.resourceType
+    ) as ARMResource[];
+
+    let passing = true;
+    console.log(response.template.resources);
+    const resources = networkRuleSets.map((r: ARMResource) => {
+      this.evaluations.forEach(e => {
+        const res = _.get(r, e.path);
+        if (res === e.invalid) {
+          if (this.allMustPass) passing = false;
+          passing = false;
+        }
+      });
+      return r.name;
+    });
+    console.log(resources);
+
+    return passing ? this.toScanResult([]) : this.toScanResult(resources);
+  }
+
+  toScanResult(resourceIds: string[]): ScanResult {
+    const scanResult = {
+      ruleName: this.name,
+      description: this.description,
+      total: resourceIds.length,
+      resourceIds,
+    };
+    return scanResult;
+  }
 }
 
 export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {

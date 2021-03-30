@@ -134,7 +134,10 @@ export default class Scan extends Command {
         }
       }
     } else if (flags.dummy) {
-      target = {type: RuleType.Dummy, context: {}};
+      target = {
+        type: RuleType.ARM,
+        subscriptionId: '6c1f4f3b-f65f-4667-8f9e-b9c48e09cd6b',
+      };
     } else {
       this.error('Command scan expects a Flag');
     }
