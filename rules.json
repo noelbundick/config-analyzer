@@ -21,63 +21,53 @@
     "name": "event-hubs-default-action-deny",
     "description": "Finds Event Hubs with a network rules set having one or more IP or virtual network rules but the default action is not deny",
     "type": "ARM",
-    "evaluations": [
-      {
+    "evaluation": {
+      "resourceType": "Microsoft.EventHub/namespaces/networkRuleSets",
+      "path": [
+        "properties",
+        "ipRules",
+        "length"
+      ],
+      "operator": "!=",
+      "value": 0,
+      "returnResource": true,
+      "or": {
         "resourceType": "Microsoft.EventHub/namespaces/networkRuleSets",
         "path": [
           "properties",
-          "ipRules",
+          "virtualNetworkRules",
           "length"
         ],
-        "evaluate": {
-          "operator": "shouldNotEqual",
-          "value": "0"
-        },
-        "or": {
-          "resourceType": "Microsoft.EventHub/namespaces/networkRuleSets",
-          "path": [
-            "properties",
-            "virtualNetworkRules",
-            "length"
-          ],
-          "evaluate": {
-            "operator": "shouldNotEqual",
-            "value": "0"
-          }
-        }
+        "operator": "!=",
+        "value": 0
       }
-    ]
+    }
   },
   {
     "name": "accidental-public-storage",
     "description": "Finds Storage Accounts with a Private Endpoint configured but the public endpoint is still enabled",
     "type": "ARM",
-    "evaluations": [
-      {
-        "id": 1,
-        "resourceType": "Microsoft.Storage/storageAccounts",
+    "evaluation": {
+      "resourceType": "Microsoft.Storage/storageAccounts",
+      "path": [
+        "properties",
+        "networkAcls",
+        "defaultAction"
+      ],
+      "operator": "!=",
+      "value": "Allow",
+      "returnResource": true,
+      "and": {
+        "resourceType": "Microsoft.Storage/storageAccounts/privateEndpointConnections",
         "path": [
-          "properties",
-          "networkAcls",
-          "defaultAction"
+          "dependsOn"
         ],
-        "evaluate": {
-          "operator": "shouldNotEqual",
-          "value": "Allow",
-          "nextPathRef": "id"
-        },
-        "and": { 
-          "id": 2,
-          "resourceType": "Microsoft.Storage/storageAccounts/privateEndpointConnections",
-          "path": [
-            "dependsOn"
-          ],
-          "evaluate": {
-            "operator": "notIncludes"
-          }
-        }
+        "operator": "notIn",
+        "parentPath": [
+          "id"
+        ]
       }
-    ]
+    }
   },
   {
     "name": "Dummy Mock Rule",
