@@ -5,10 +5,6 @@ import {format, LogOptions} from '../commandHelper';
 import cli from 'cli-ux';
 import chalk = require('chalk');
 import {DefaultAzureCredential} from '@azure/identity';
-import {credential} from '../../test/azure';
-import {AzureIdentityCredentialAdapter} from '../azure';
-import {ResourceManagementClient} from '@azure/arm-resources';
-import {ResourceGroupsExportTemplateResponse} from '@azure/arm-resources/esm/models';
 
 export default class Scan extends Command {
   private isDebugMode = false;
@@ -43,9 +39,11 @@ export default class Scan extends Command {
       multiple: true,
       dependsOn: ['scope'],
     }),
-    dummy: flags.boolean({
-      char: 'd',
-      description: 'runs dummy rules to mock multi rule system',
+    // update description
+    template: flags.boolean({
+      char: 't',
+      description: 'runs template rules',
+      dependsOn: ['scope'],
     }),
     file: flags.string({
       char: 'f',
@@ -115,7 +113,27 @@ export default class Scan extends Command {
 
     if (flags.verbose) this.isVerbose = true;
     if (flags.debug) this.isDebugMode = true;
-    if (flags.scope) {
+    if (flags.template) {
+      if (flags.scope.length > 1) {
+        this.error('Please provide only one subscription');
+      }
+      if (!flags.group || flags.group.length > 1) {
+        this.error('Please provide one resource group to scan');
+      }
+      cli.action.start('Fetching template. This may take a few moments');
+      const template = await ARMTemplateRule.getTemplate(
+        flags.scope[0],
+        flags.group[0]
+      );
+      cli.action.stop();
+      console.log(template._response.parsedBody.template.resources);
+      target = {
+        type: RuleType.ARM,
+        subscriptionId: flags.scope[0],
+        groupName: flags.group[0],
+        templateResources: template._response.parsedBody.template.resources,
+      };
+    } else if (flags.scope) {
       if (flags.scope.length > 1 && flags.group) {
         this.error(
           'Only one subscription can be scanned when using Flag --group'
@@ -137,11 +155,6 @@ export default class Scan extends Command {
           );
         }
       }
-    } else if (flags.dummy) {
-      target = {
-        type: RuleType.ARM,
-        subscriptionId: '6c1f4f3b-f65f-4667-8f9e-b9c48e09cd6b',
-      };
     } else {
       this.error('Command scan expects a Flag');
     }
