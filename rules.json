@@ -21,15 +21,61 @@
     "name": "event-hubs-default-action-deny",
     "description": "Finds Event Hubs with a network rules set having one or more IP or virtual network rules but the default action is not deny",
     "type": "ARM",
-    "resourceType": "Microsoft.EventHub/namespaces/networkRuleSets",
     "evaluations": [
       {
-        "path": ["properties", "ipRules", "length"],
-        "expected": 0
-      },
+        "resourceType": "Microsoft.EventHub/namespaces/networkRuleSets",
+        "path": [
+          "properties",
+          "ipRules",
+          "length"
+        ],
+        "evaluate": {
+          "operator": "shouldNotEqual",
+          "value": "0"
+        },
+        "or": {
+          "resourceType": "Microsoft.EventHub/namespaces/networkRuleSets",
+          "path": [
+            "properties",
+            "virtualNetworkRules",
+            "length"
+          ],
+          "evaluate": {
+            "operator": "shouldNotEqual",
+            "value": "0"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "accidental-public-storage",
+    "description": "Finds Storage Accounts with a Private Endpoint configured but the public endpoint is still enabled",
+    "type": "ARM",
+    "evaluations": [
       {
-        "path": ["properties", "virtualNetworlRules", "length"],
-        "expected": 0
+        "id": 1,
+        "resourceType": "Microsoft.Storage/storageAccounts",
+        "path": [
+          "properties",
+          "networkAcls",
+          "defaultAction"
+        ],
+        "evaluate": {
+          "operator": "shouldNotEqual",
+          "value": "Allow",
+          "nextPathRef": "id"
+        },
+        "and": { 
+          "id": 2,
+          "resourceType": "Microsoft.Storage/storageAccounts/privateEndpointConnections",
+          "path": [
+            "dependsOn"
+          ],
+          "evaluate": {
+            "operator": "notIncludes"
+          }
+        }
       }
     ]
   },
@@ -37,6 +83,8 @@
     "name": "Dummy Mock Rule",
     "description": "Mocks a multiple rule system",
     "type": "Dummy",
-    "context": {"message": "I don't do anything"}
+    "context": {
+      "message": "I don't do anything"
+    }
   }
 ]

@@ -2,10 +2,12 @@ import {ResourceGraphModels} from '@azure/arm-resourcegraph';
 import {DefaultAzureCredential} from '@azure/identity';
 import {AzureClient} from './azure';
 import {ScanResult} from './scanner';
-import {ResourceManagementClient} from '@azure/arm-resources';
+import {
+  ResourceManagementClient,
+  ResourceManagementModels,
+} from '@azure/arm-resources';
 import {credential} from '../test/azure';
 import {AzureIdentityCredentialAdapter} from './azure';
-import {ARMResource, EventHubNetworkRuleSet} from './index2';
 import _ = require('lodash');
 
 export type Rule = ResourceGraphRule | DummyRule | ARMTemplateRule;
@@ -15,6 +17,12 @@ export enum RuleType {
   ResourceGraph = 'ResourceGraph',
   ARM = 'ARM',
   Dummy = 'Dummy',
+}
+
+export interface ARMResource {
+  apiVersion: string;
+  name: string;
+  type: string;
 }
 
 export interface BaseRule<T> {
@@ -76,75 +84,143 @@ interface ResourceGraphQueryResponseColumn {
   type: string | object;
 }
 
+type ARMOperator =
+  | 'shouldEqual'
+  | 'shouldNotEqual'
+  | 'includes'
+  | 'notIncludes';
+
+interface ARMEvaluationObject {
+  operator: ARMOperator;
+  value: string;
+  nextPathRef?: string;
+}
+
+interface ARMEvaluation {
+  id: number;
+  resourceType: string;
+  path: string[];
+  evaluate: ARMEvaluationObject;
+  and?: ARMEvaluation;
+  or?: ARMEvaluation;
+}
+
 export class ARMTemplateRule implements BaseRule<ARMTarget> {
   type: RuleType.ARM;
-  resourceType: string;
   name: string;
   description: string;
-  allMustPass: boolean;
-  evaluations: {
-    path: string;
-    invalid: string | number;
-  }[];
+  evaluations: ARMEvaluation[];
 
   constructor(rule: {
     type: RuleType.ARM;
     name: string;
     description: string;
-    resourceType: string;
-    allMustPass: boolean;
-    evaluations: {
-      path: string;
-      invalid: string | number;
-    }[];
+    evaluations: ARMEvaluation[];
   }) {
     this.type = rule.type;
     this.name = rule.name;
     this.description = rule.description;
     this.evaluations = rule.evaluations;
-    this.resourceType = rule.resourceType;
-    this.allMustPass = rule.allMustPass;
+  }
+
+  static async getTemplate(client: ResourceManagementClient) {
+    return client.resourceGroups.exportTemplate('aza-1614638848251', {
+      resources: ['*'],
+      options: 'SkipAllParameterization',
+    }) as Promise<
+      ResourceManagementModels.ResourceGroupsExportTemplateResponse & {
+        resources: ARMResource[];
+      }
+    >;
   }
 
   async execute(target: ARMTarget) {
+    let results: string[] = [];
     const resourceClient = new ResourceManagementClient(
       new AzureIdentityCredentialAdapter(credential),
       target.subscriptionId
     );
-    const response = await resourceClient.resourceGroups.exportTemplate(
-      'josh-trash',
-      {resources: ['*']}
-    );
-
-    const networkRuleSets = response.template.resources.filter(
-      (r: ARMResource) => r.type === this.resourceType
-    ) as ARMResource[];
-
-    let passing = true;
-    console.log(response.template.resources);
-    const resources = networkRuleSets.map((r: ARMResource) => {
-      this.evaluations.forEach(e => {
-        const res = _.get(r, e.path);
-        if (res === e.invalid) {
-          if (this.allMustPass) passing = false;
-          passing = false;
-        }
-      });
-      return r.name;
-    });
-    console.log(resources);
-
-    return passing ? this.toScanResult([]) : this.toScanResult(resources);
+    const template = await ARMTemplateRule.getTemplate(resourceClient);
+    const resources = template._response.parsedBody.template.resources;
+    for (const e of this.evaluations) {
+      results = [...results, ...this.evaluate(e, resources)];
+    }
+    return this.toScanResult(results);
   }
 
-  toScanResult(resourceIds: string[]): ScanResult {
+  toScanResult(resourceNames: string[]): ScanResult {
     const scanResult = {
       ruleName: this.name,
       description: this.description,
-      total: resourceIds.length,
-      resourceIds,
+      total: resourceNames.length,
+      resourceIds: resourceNames,
     };
     return scanResult;
+  }
+
+  evaluate(e: ARMEvaluation, resources: ARMResource[], prevPath?: string) {
+    let result: string[] = [];
+    const filteredResources = resources.filter(r => r.type === e.resourceType);
+    const resourceNames = filteredResources.map(r => {
+      let passing = true;
+      let expectedValue;
+      const actualValue = _.get(r, e.path);
+      if (prevPath === 'id') {
+        expectedValue = this.getResourceIdFromFunction(r);
+      } else if (Array.isArray(prevPath)) {
+        expectedValue = _.get(r, prevPath);
+      } else {
+        expectedValue = e.evaluate.value;
+      }
+      switch (e.evaluate.operator) {
+        case 'shouldEqual':
+          if (actualValue !== expectedValue) {
+            passing = false;
+          }
+          break;
+        case 'shouldNotEqual':
+          if (actualValue === expectedValue) {
+            passing = false;
+          }
+          break;
+        case 'includes':
+          if (!actualValue.includes(expectedValue)) {
+            passing = false;
+          }
+          break;
+        case 'notIncludes':
+          if (actualValue.includes(expectedValue)) {
+            passing = false;
+          }
+          break;
+        default:
+          break;
+      }
+      if (e.and && !passing) {
+        result = [
+          ...result,
+          ...this.evaluate(e.and, resources, e.evaluate.nextPathRef),
+        ];
+      }
+      if (e.or && passing) {
+        if (e.or.resourceType === e.resourceType) {
+          this.evaluate(e.or, filteredResources, e.or.evaluate.nextPathRef);
+        } else {
+          this.evaluate(e.or, filteredResources, e.or.evaluate.nextPathRef);
+        }
+      }
+      return r.name;
+    });
+    result = [...result, ...resourceNames];
+    return result;
+  }
+
+  getResourceIdFromFunction(resource: ARMResource) {
+    return resource.name;
+  }
+
+  getResourcesByType(type: string, resources: ARMResource[]) {
+    return resources.filter(r => r.type === type);
   }
 }
 

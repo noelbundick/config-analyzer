@@ -1,10 +1,14 @@
 import {Command, flags} from '@oclif/command';
 import {Scanner, ScanResult} from '../scanner';
-import {Target, RuleType, ResourceGraphRule} from '../rules';
+import {Target, RuleType, ResourceGraphRule, ARMTemplateRule} from '../rules';
 import {format, LogOptions} from '../commandHelper';
 import cli from 'cli-ux';
 import chalk = require('chalk');
 import {DefaultAzureCredential} from '@azure/identity';
+import {credential} from '../../test/azure';
+import {AzureIdentityCredentialAdapter} from '../azure';
+import {ResourceManagementClient} from '@azure/arm-resources';
+import {ResourceGroupsExportTemplateResponse} from '@azure/arm-resources/esm/models';
 
 export default class Scan extends Command {
   private isDebugMode = false;
@@ -141,7 +145,6 @@ export default class Scan extends Command {
     } else {
       this.error('Command scan expects a Flag');
     }
-
     await scanner.loadRulesFromFile(flags.file);
     cli.action.start('Scanning');
     const results = await scanner.scan(target);
