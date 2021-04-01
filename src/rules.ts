@@ -2,21 +2,16 @@ import {ResourceGraphModels} from '@azure/arm-resourcegraph';
 import {DefaultAzureCredential} from '@azure/identity';
 import {AzureClient} from './azure';
 import {ScanResult} from './scanner';
-import {
-  ResourceManagementClient,
-  ResourceManagementModels,
-} from '@azure/arm-resources';
-import {credential} from '../test/azure';
+import {ResourceManagementClient} from '@azure/arm-resources';
 import {AzureIdentityCredentialAdapter} from './azure';
 import _ = require('lodash');
 
-export type Rule = ResourceGraphRule | DummyRule | ARMTemplateRule;
-export type Target = ResourceGraphTarget | DummyTarget | ARMTarget;
+export type Rule = ResourceGraphRule | ARMTemplateRule;
+export type Target = ResourceGraphTarget | ARMTarget;
 
 export enum RuleType {
   ResourceGraph = 'ResourceGraph',
   ARM = 'ARM',
-  Dummy = 'Dummy',
 }
 
 export interface ARMResource {
@@ -39,188 +34,201 @@ export interface ResourceGraphTarget {
   groupNames?: string[];
 }
 
-export interface ARMTarget {
-  type: RuleType.ARM;
-  subscriptionId: string;
-  groupNames?: string[];
-}
-
-export interface DummyTarget {
-  type: RuleType.Dummy;
-  context: object;
-}
-
-export class DummyRule implements BaseRule<DummyTarget> {
-  type: RuleType.Dummy;
-  name: string;
-  description: string;
-  context: object;
-
-  constructor(rule: {
-    type: RuleType.Dummy;
-    name: string;
-    description: string;
-    context: object;
-  }) {
-    this.type = rule.type;
-    this.name = rule.name;
-    this.description = rule.description;
-    this.context = rule.context;
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  execute(_: DummyTarget) {
-    return Promise.resolve({
-      ruleName: this.name,
-      description: this.description,
-      total: 0,
-      resourceIds: [],
-    }) as Promise<ScanResult>;
-  }
-}
-
 interface ResourceGraphQueryResponseColumn {
   name: string;
   type: string | object;
 }
 
-type ARMOperator =
-  | 'shouldEqual'
-  | 'shouldNotEqual'
-  | 'includes'
-  | 'notIncludes';
-
-interface ARMEvaluationObject {
-  operator: ARMOperator;
-  value: string;
-  nextPathRef?: string;
+export interface ARMTarget {
+  type: RuleType.ARM;
+  templateResources: ARMResource[];
+  subscriptionId: string;
+  groupName: string;
 }
 
+type Operator = '==' | '!=' | 'in' | 'notIn';
+
 interface ARMEvaluation {
-  id: number;
   resourceType: string;
   path: string[];
-  evaluate: ARMEvaluationObject;
+  operator: Operator;
+  value?: string | number;
+  parentPath?: string[];
   and?: ARMEvaluation;
   or?: ARMEvaluation;
+  returnResource?: boolean;
 }
 
 export class ARMTemplateRule implements BaseRule<ARMTarget> {
   type: RuleType.ARM;
   name: string;
   description: string;
-  evaluations: ARMEvaluation[];
+  evaluation: ARMEvaluation;
 
   constructor(rule: {
     type: RuleType.ARM;
     name: string;
     description: string;
-    evaluations: ARMEvaluation[];
+    evaluation: ARMEvaluation;
   }) {
     this.type = rule.type;
     this.name = rule.name;
     this.description = rule.description;
-    this.evaluations = rule.evaluations;
+    this.evaluation = rule.evaluation;
   }
 
-  static async getTemplate(client: ResourceManagementClient) {
-    return client.resourceGroups.exportTemplate('aza-1614638848251', {
+  static async getTemplate(subscriptionId: string, groupName: string) {
+    const credential = new DefaultAzureCredential();
+    const client = new ResourceManagementClient(
+      new AzureIdentityCredentialAdapter(credential),
+      subscriptionId
+    );
+    return await client.resourceGroups.exportTemplate(groupName, {
       resources: ['*'],
       options: 'SkipAllParameterization',
-    }) as Promise<
-      ResourceManagementModels.ResourceGroupsExportTemplateResponse & {
-        resources: ARMResource[];
-      }
-    >;
+    });
   }
 
   async execute(target: ARMTarget) {
-    let results: string[] = [];
-    const resourceClient = new ResourceManagementClient(
-      new AzureIdentityCredentialAdapter(credential),
-      target.subscriptionId
-    );
-    const template = await ARMTemplateRule.getTemplate(resourceClient);
-    const resources = template._response.parsedBody.template.resources;
-    for (const e of this.evaluations) {
-      results = [...results, ...this.evaluate(e, resources)];
-    }
+    console.log(this.evaluation);
+    const results = this.evaluate(this.evaluation, target);
     return this.toScanResult(results);
   }
 
-  toScanResult(resourceNames: string[]): ScanResult {
+  toScanResult(resourceIds: string[]): ScanResult {
     const scanResult = {
       ruleName: this.name,
       description: this.description,
-      total: resourceNames.length,
-      resourceIds: resourceNames,
+      total: resourceIds.length,
+      resourceIds: resourceIds,
     };
     return scanResult;
   }
 
-  evaluate(e: ARMEvaluation, resources: ARMResource[], prevPath?: string) {
-    let result: string[] = [];
-    const filteredResources = resources.filter(r => r.type === e.resourceType);
-    const resourceNames = filteredResources.map(r => {
+  evaluate(
+    evaluation: ARMEvaluation,
+    target: ARMTarget,
+    prev?: {resource: ARMResource; evaluation: ARMEvaluation}
+  ) {
+    const results: string[] = [];
+    const filteredResources = target.templateResources.filter(
+      (r: ARMResource) => r.type === evaluation.resourceType
+    );
+    for (const r of filteredResources) {
       let passing = true;
-      let expectedValue;
-      const actualValue = _.get(r, e.path);
-      if (prevPath === 'id') {
-        expectedValue = this.getResourceIdFromFunction(r);
-      } else if (Array.isArray(prevPath)) {
-        expectedValue = _.get(r, prevPath);
-      } else {
-        expectedValue = e.evaluate.value;
-      }
-      switch (e.evaluate.operator) {
-        case 'shouldEqual':
+      const next = {resource: r, evaluation};
+      const actualValue = this.getResourcePath(r, evaluation.path);
+      const expectedValue = this.getExpectedValue(r, evaluation, prev);
+
+      switch (evaluation.operator) {
+        case '==':
           if (actualValue !== expectedValue) {
+            if (evaluation.returnResource) {
+              results.push(this.buildResourceId(r, target));
+            }
             passing = false;
           }
           break;
-        case 'shouldNotEqual':
+        case '!=':
           if (actualValue === expectedValue) {
+            if (evaluation.returnResource) {
+              results.push(this.buildResourceId(r, target));
+            }
             passing = false;
           }
           break;
-        case 'includes':
-          if (!actualValue.includes(expectedValue)) {
-            passing = false;
+        case 'in':
+          if (Array.isArray(expectedValue)) {
+            if (expectedValue.every(v => !new RegExp(v).test(actualValue))) {
+              if (evaluation.returnResource) {
+                results.push(this.buildResourceId(r, target));
+              }
+              passing = false;
+            }
+          } else {
+            if (!actualValue.includes(expectedValue)) {
+              if (evaluation.returnResource) {
+                results.push(this.buildResourceId(r, target));
+              }
+              passing = false;
+            }
           }
           break;
-        case 'notIncludes':
-          if (actualValue.includes(expectedValue)) {
-            passing = false;
+        case 'notIn':
+          if (Array.isArray(expectedValue)) {
+            if (expectedValue.every(v => new RegExp(v).test(actualValue))) {
+              if (evaluation.returnResource) {
+                results.push(this.buildResourceId(r, target));
+              }
+              passing = false;
+            }
+          } else {
+            if (actualValue.includes(expectedValue)) {
+              if (evaluation.returnResource) {
+                results.push(this.buildResourceId(r, target));
+              }
+              passing = false;
+            }
           }
           break;
         default:
-          break;
+          throw Error(
+            "Invalid operator. The accepted operators are '!=', '==', 'in', 'notIn'"
+          );
       }
-      if (e.and && !passing) {
-        result = [
-          ...result,
-          ...this.evaluate(e.and, resources, e.evaluate.nextPathRef),
-        ];
+
+      if (evaluation.and && !passing) {
+        this.evaluate(evaluation.and, target, next);
       }
-      if (e.or && passing) {
-        if (e.or.resourceType === e.resourceType) {
-          this.evaluate(e.or, filteredResources, e.or.evaluate.nextPathRef);
+      if (evaluation.or && passing) {
+        this.evaluate(evaluation.or, target, next);
+      }
+    }
+    return results;
+  }
+
+  getExpectedValue(
+    resource: ARMResource,
+    evaluation: ARMEvaluation,
+    prev?: {resource: ARMResource; evaluation: ARMEvaluation}
+  ) {
+    let value: number | string | string[];
+    if (evaluation.value || evaluation.value === 0) {
+      value = evaluation.value;
+    } else if (evaluation.parentPath) {
+      if (evaluation.parentPath[0] === 'id') {
+        if (prev?.resource.name) {
+          value = prev?.resource.name.split('/');
         } else {
-          this.evaluate(e.or, filteredResources, e.or.evaluate.nextPathRef);
+          throw Error(
+            `The Parent path was not found on the resource: ${prev?.resource.name}`
+          );
         }
+      } else {
+        value = this.getResourcePath(resource, evaluation.parentPath);
       }
-      return r.name;
-    });
-    result = [...result, ...resourceNames];
-    return result;
+    } else {
+      throw Error(
+        'Neither a value or a parentPath was found. Every evaultion needs either a value and parentPath to evaluate'
+      );
+    }
+    return value;
   }
 
-  getResourceIdFromFunction(resource: ARMResource) {
-    return resource.name;
+  getResourcePath(resource: ARMResource, path: string[]) {
+    const value = _.get(resource, path, 'NOT FOUND');
+    if (value === 'NOT FOUND') {
+      throw Error(
+        `The path '${path.join('.')}' was not resolved on the resource ${
+          resource.name
+        }`
+      );
+    }
+    return value;
   }
 
-  getResourcesByType(type: string, resources: ARMResource[]) {
-    return resources.filter(r => r.type === type);
+  buildResourceId(resource: ARMResource, target: ARMTarget) {
+    return `subscriptions/${target.subscriptionId}/resourceGroups/${target.groupName}/providers/${resource.type}/${resource.name}`;
   }
 }
 
