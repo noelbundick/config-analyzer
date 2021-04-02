@@ -65,7 +65,7 @@ describe('ARM Template Rule', function () {
   this.slow(15000);
   this.timeout(20000);
   it('can get an execute an accidental storage rule scoped to a Resource Group', async () => {
-    const accidentalStorage = {
+    const rule = new ARMTemplateRule({
       name: 'accidental-public-storage',
       description:
         'Finds Storage Accounts with a Private Endpoint configured but the public endpoint is still enabled',
@@ -75,7 +75,6 @@ describe('ARM Template Rule', function () {
         path: ['properties', 'networkAcls', 'defaultAction'],
         operator: '!=' as Operator,
         value: 'Allow',
-        returnResource: true,
         and: {
           resourceType:
             'Microsoft.Storage/storageAccounts/privateEndpointConnections',
@@ -84,8 +83,7 @@ describe('ARM Template Rule', function () {
           parentPath: ['id'],
         },
       },
-    };
-    const rule = new ARMTemplateRule(accidentalStorage);
+    });
     const template = await ARMTemplateRule.getTemplate(
       subscriptionId,
       resourceGroup
