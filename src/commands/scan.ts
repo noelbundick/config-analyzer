@@ -126,7 +126,6 @@ export default class Scan extends Command {
         flags.group[0]
       );
       cli.action.stop();
-      console.log(template._response.parsedBody.template.resources);
       target = {
         type: RuleType.ARM,
         subscriptionId: flags.scope[0],

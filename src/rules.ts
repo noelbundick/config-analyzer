@@ -24,7 +24,7 @@ export interface BaseRule<T> {
   name: string;
   description: string;
   type: RuleType;
-  execute?: (target: T) => Promise<ScanResult>;
+  execute?: (target: T) => Promise<ScanResult> | ScanResult;
 }
 
 export interface ResourceGraphTarget {
@@ -48,7 +48,7 @@ export interface ARMTarget {
 
 export type Operator = '==' | '!=' | 'in' | 'notIn';
 
-interface ARMEvaluation {
+export interface ARMEvaluation {
   resourceType: string;
   path: string[];
   operator: Operator;
@@ -56,7 +56,6 @@ interface ARMEvaluation {
   parentPath?: string[];
   and?: ARMEvaluation;
   or?: ARMEvaluation;
-  returnResource?: boolean;
 }
 
 export class ARMTemplateRule implements BaseRule<ARMTarget> {
@@ -89,8 +88,8 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
     });
   }
 
-  async execute(target: ARMTarget) {
-    const results = this.evaluate(this.evaluation, target);
+  execute(target: ARMTarget) {
+    const results = this.evaluate(this.evaluation, target, []);
     return this.toScanResult(results);
   }
 
@@ -107,67 +106,57 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
   evaluate(
     evaluation: ARMEvaluation,
     target: ARMTarget,
-    prev?: {resource: ARMResource; evaluation: ARMEvaluation}
+    results: string[],
+    prev?: {
+      resource: ARMResource;
+      evaluation: ARMEvaluation;
+    }
   ) {
-    const results: string[] = [];
+    // if (passing) return [];
+    // let results = prev ? prev.results : [];
     const filteredResources = target.templateResources.filter(
       (r: ARMResource) => r.type === evaluation.resourceType
     );
     for (const r of filteredResources) {
-      let passing = true;
+      let passing;
       const next = {resource: r, evaluation};
       const actualValue = this.resolveResourcePath(r, evaluation.path);
       const expectedValue = this.getValue(evaluation, prev?.resource);
-
       switch (evaluation.operator) {
         case '==':
           if (actualValue !== expectedValue) {
-            if (evaluation.returnResource) {
-              results.push(this.buildResourceId(r, target));
-            }
+            results.push(this.getResourceId(r, target));
             passing = false;
+          } else {
+            results = [];
+            passing = true;
           }
           break;
         case '!=':
           if (actualValue === expectedValue) {
-            if (evaluation.returnResource) {
-              results.push(this.buildResourceId(r, target));
-            }
+            results.push(this.getResourceId(r, target));
             passing = false;
+          } else {
+            results = [];
+            passing = true;
           }
           break;
         case 'in':
-          if (Array.isArray(expectedValue)) {
-            if (expectedValue.every(v => !new RegExp(v).test(actualValue))) {
-              if (evaluation.returnResource) {
-                results.push(this.buildResourceId(r, target));
-              }
-              passing = false;
-            }
+          if (!actualValue.includes(expectedValue)) {
+            results.push(this.getResourceId(r, target));
+            passing = false;
           } else {
-            if (!actualValue.includes(expectedValue)) {
-              if (evaluation.returnResource) {
-                results.push(this.buildResourceId(r, target));
-              }
-              passing = false;
-            }
+            results = [];
+            passing = true;
           }
           break;
         case 'notIn':
-          if (Array.isArray(expectedValue)) {
-            if (expectedValue.every(v => new RegExp(v).test(actualValue))) {
-              if (evaluation.returnResource) {
-                results.push(this.buildResourceId(r, target));
-              }
-              passing = false;
-            }
+          if (actualValue.includes(expectedValue)) {
+            results.push(this.getResourceId(r, target));
+            passing = false;
           } else {
-            if (actualValue.includes(expectedValue)) {
-              if (evaluation.returnResource) {
-                results.push(this.buildResourceId(r, target));
-              }
-              passing = false;
-            }
+            results = [];
+            passing = true;
           }
           break;
         default:
@@ -177,10 +166,12 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
       }
 
       if (evaluation.and && !passing) {
-        this.evaluate(evaluation.and, target, next);
+        results = this.evaluate(evaluation.and, target, results, next);
+      } else {
+        passing = true;
       }
       if (evaluation.or && passing) {
-        this.evaluate(evaluation.or, target, next);
+        results = this.evaluate(evaluation.or, target, results, next);
       }
     }
     return results;
@@ -194,7 +185,7 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
       return evaluation.value;
     } else if (resource && evaluation.parentPath) {
       if (evaluation.parentPath[0] === 'id') {
-        return this.buildARMFunction(resource);
+        return this.toResourceIdARMFunction(resource);
       } else {
         return this.resolveResourcePath(resource, evaluation.parentPath);
       }
@@ -210,17 +201,18 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
     if (value === 'NOT FOUND') {
       throw Error(
         `The path '${path.join('.')}' was not resolved on the resource ${
-          resource.name
-        }`
+          resource.type
+        }/${resource.name}`
       );
     }
     return value;
   }
 
-  buildARMFunction(resource: ARMResource) {
+  toResourceIdARMFunction(resource: ARMResource) {
     let path;
-    if (this.isParameter(resource.name)) {
-      // needs logic for concat parmeters
+    if (this.isARMFunction(resource.name)) {
+      // needs logic to convert arm functions
+      // this currently only removes the array []
       path = resource.name.slice(1, resource.name.length - 1);
     } else {
       path = resource.name
@@ -231,11 +223,11 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
     return `[resourceId('${resource.type}', ${path})]`;
   }
 
-  isParameter(value: string) {
+  isARMFunction(value: string) {
     return value[0] === '[' && value[value.length - 1] === ']';
   }
 
-  buildResourceId(resource: ARMResource, target: ARMTarget) {
+  getResourceId(resource: ARMResource, target: ARMTarget) {
     if (target.subscriptionId && target.groupName) {
       return `subscriptions/${target.subscriptionId}/resourceGroups/${target.groupName}/providers/${resource.type}/${resource.name}`;
     } else {
