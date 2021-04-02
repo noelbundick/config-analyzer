@@ -47,7 +47,7 @@
     "name": "accidental-public-storage",
     "description": "Finds Storage Accounts with a Private Endpoint configured but the public endpoint is still enabled",
     "type": "ARM",
-    "evaluation": {
+    "evaluations": {
       "resourceType": "Microsoft.Storage/storageAccounts",
       "path": [
         "properties",
