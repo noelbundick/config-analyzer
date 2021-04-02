@@ -1,10 +1,12 @@
 import {assert, expect} from 'chai';
 import {
+  ARMTemplateRule,
+  Operator,
   ResourceGraphRule,
   ResourceGraphTarget,
   RuleType,
 } from '../../src/rules';
-import {resourceGroup, resourceGroup2, subscriptionId} from '.';
+import {credential, resourceGroup, resourceGroup2, subscriptionId} from '.';
 import {DefaultAzureCredential} from '@azure/identity';
 
 describe('Resource Graph Rule', function () {
@@ -56,5 +58,58 @@ describe('Resource Graph Rule', function () {
     expect(nonExistingGroups).to.contain(nonExistingGroup2);
     expect(nonExistingGroups).to.not.contain(resourceGroup);
     expect(nonExistingGroups).to.not.contain(resourceGroup2);
+  });
+});
+
+describe('ARM Template Rule', function () {
+  this.slow(15000);
+  this.timeout(20000);
+  it('can get an execute an accidental storage rule scoped to a Resource Group', async () => {
+    const accidentalStorage = {
+      name: 'accidental-public-storage',
+      description:
+        'Finds Storage Accounts with a Private Endpoint configured but the public endpoint is still enabled',
+      type: 'ARM' as RuleType.ARM,
+      evaluation: {
+        resourceType: 'Microsoft.Storage/storageAccounts',
+        path: ['properties', 'networkAcls', 'defaultAction'],
+        operator: '!=' as Operator,
+        value: 'Allow',
+        returnResource: true,
+        and: {
+          resourceType:
+            'Microsoft.Storage/storageAccounts/privateEndpointConnections',
+          path: ['dependsOn'],
+          operator: 'notIn' as Operator,
+          parentPath: ['id'],
+        },
+      },
+    };
+    const rule = new ARMTemplateRule(accidentalStorage);
+    const template = await ARMTemplateRule.getTemplate(
+      subscriptionId,
+      resourceGroup
+    );
+    const target = {
+      type: 'ARM' as RuleType.ARM,
+      subscriptionId: subscriptionId,
+      groupName: resourceGroup,
+      templateResources: template._response.parsedBody.template.resources,
+    };
+    // clean this up to not have hard coded values
+    const storageAccountName = 'azabhcf24jbcuxwo';
+    const privateEndpointName =
+      'azabhcf24jbcuxwo/azabhcf24jbcuxwo.1274fbe6-5b85-4103-8412-7557abd3bc95';
+    const expectedResult = {
+      ruleName: rule.name,
+      description: rule.description,
+      total: 2,
+      resourceIds: [
+        `subscriptions/${target.subscriptionId}/resourceGroups/${target.groupName}/providers/${rule.evaluation.resourceType}/${storageAccountName}`,
+        `subscriptions/${target.subscriptionId}/resourceGroups/${target.groupName}/providers/${rule.evaluation.and?.resourceType}/${privateEndpointName}`,
+      ],
+    };
+    const result = rule.execute(target);
+    expect(result).to.deep.equal(expectedResult);
   });
 });
