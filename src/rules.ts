@@ -42,11 +42,11 @@ interface ResourceGraphQueryResponseColumn {
 export interface ARMTarget {
   type: RuleType.ARM;
   templateResources: ARMResource[];
-  subscriptionId: string;
-  groupName: string;
+  subscriptionId?: string;
+  groupName?: string;
 }
 
-type Operator = '==' | '!=' | 'in' | 'notIn';
+export type Operator = '==' | '!=' | 'in' | 'notIn';
 
 interface ARMEvaluation {
   resourceType: string;
@@ -90,7 +90,6 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
   }
 
   async execute(target: ARMTarget) {
-    console.log(this.evaluation);
     const results = this.evaluate(this.evaluation, target);
     return this.toScanResult(results);
   }
@@ -117,8 +116,8 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
     for (const r of filteredResources) {
       let passing = true;
       const next = {resource: r, evaluation};
-      const actualValue = this.getResourcePath(r, evaluation.path);
-      const expectedValue = this.getExpectedValue(r, evaluation, prev);
+      const actualValue = this.resolveResourcePath(r, evaluation.path);
+      const expectedValue = this.getValue(evaluation, prev?.resource);
 
       switch (evaluation.operator) {
         case '==':
@@ -187,35 +186,26 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
     return results;
   }
 
-  getExpectedValue(
-    resource: ARMResource,
+  getValue(
     evaluation: ARMEvaluation,
-    prev?: {resource: ARMResource; evaluation: ARMEvaluation}
-  ) {
-    let value: number | string | string[];
+    resource?: ARMResource
+  ): string | number | string[] {
     if (evaluation.value || evaluation.value === 0) {
-      value = evaluation.value;
-    } else if (evaluation.parentPath) {
+      return evaluation.value;
+    } else if (resource && evaluation.parentPath) {
       if (evaluation.parentPath[0] === 'id') {
-        if (prev?.resource.name) {
-          value = prev?.resource.name.split('/');
-        } else {
-          throw Error(
-            `The Parent path was not found on the resource: ${prev?.resource.name}`
-          );
-        }
+        return this.buildARMFunction(resource);
       } else {
-        value = this.getResourcePath(resource, evaluation.parentPath);
+        return this.resolveResourcePath(resource, evaluation.parentPath);
       }
     } else {
       throw Error(
-        'Neither a value or a parentPath was found. Every evaultion needs either a value and parentPath to evaluate'
+        'Neither a value or a parentPath could be resolved. Every evalution needs either a value and parentPath to evaluate'
       );
     }
-    return value;
   }
 
-  getResourcePath(resource: ARMResource, path: string[]) {
+  resolveResourcePath(resource: ARMResource, path: string[]) {
     const value = _.get(resource, path, 'NOT FOUND');
     if (value === 'NOT FOUND') {
       throw Error(
@@ -227,8 +217,31 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
     return value;
   }
 
+  buildARMFunction(resource: ARMResource) {
+    let path;
+    if (this.isParameter(resource.name)) {
+      // needs logic for concat parmeters
+      path = resource.name.slice(1, resource.name.length - 1);
+    } else {
+      path = resource.name
+        .split('/')
+        .map(el => `'${el}'`)
+        .join(', ');
+    }
+    return `[resourceId('${resource.type}', ${path})]`;
+  }
+
+  isParameter(value: string) {
+    return value[0] === '[' && value[value.length - 1] === ']';
+  }
+
   buildResourceId(resource: ARMResource, target: ARMTarget) {
-    return `subscriptions/${target.subscriptionId}/resourceGroups/${target.groupName}/providers/${resource.type}/${resource.name}`;
+    if (target.subscriptionId && target.groupName) {
+      return `subscriptions/${target.subscriptionId}/resourceGroups/${target.groupName}/providers/${resource.type}/${resource.name}`;
+    } else {
+      // add function to convert parameterized names to a value?
+      return resource.name;
+    }
   }
 }
 
