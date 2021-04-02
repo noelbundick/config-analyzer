@@ -6,18 +6,6 @@
     "query": "Resources | where type=~ 'Microsoft.Storage/storageAccounts' and isnotempty(properties.privateEndpointConnections[0]) and properties.networkAcls.defaultAction=~ 'Allow'"
   },
   {
-    "name": "event-hubs-not-locked-down",
-    "description": "Finds Event Hubs with a network rules set having zero IP or virtual network rules for the namespace",
-    "type": "ResourceGraph",
-    "query": "Resources | where type == 'Microsoft.EventHub/namespaces/networkrulesets'  and (isempty(properties.ipRules[0]) or isempty(properties.virtualNetworkRules[0]))"
-  },
-  {
-    "name": "event-hubs-default-action-deny",
-    "description": "Finds Event Hubs with a network rules set having one or more IP or virtual network rules but the default action is not deny",
-    "type": "ResourceGraph",
-    "query": "Resources | where type == 'Microsoft.EventHub/namespaces/networkrulesets'  and (isnotempty(properties.ipRules[0]) or isnotempty(properties.virtualNetworkRules[0])) and properties.defaultAction !~ 'Allow'"
-  },
-  {
     "name": "event-hubs-default-action-deny",
     "description": "Finds Event Hubs with a network rules set having one or more IP or virtual network rules but the default action is not deny",
     "type": "ARM",
@@ -65,14 +53,6 @@
           "id"
         ]
       }
-    }
-  },
-  {
-    "name": "Dummy Mock Rule",
-    "description": "Mocks a multiple rule system",
-    "type": "Dummy",
-    "context": {
-      "message": "I don't do anything"
     }
   }
 ]
