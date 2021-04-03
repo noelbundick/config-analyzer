@@ -18,7 +18,7 @@
       ],
       "operator": "!=",
       "value": 0,
-      "or": {
+      "and": [{
         "resourceType": "Microsoft.EventHub/namespaces/networkRuleSets",
         "path": [
           "properties",
@@ -27,7 +27,7 @@
         ],
         "operator": "!=",
         "value": 0
-      }
+      }]
     }
   },
   {
@@ -43,8 +43,8 @@
       ],
       "operator": "!=",
       "value": "Allow",
-      "and": {
-        "resourceType": "Microsoft.Storage/storageAccounts/privateEndpointConnections",
+      "or": [{
+        "resourceType": "Microsoft.Network/privateEndpoints",
         "path": [
           "dependsOn"
         ],
@@ -52,7 +52,7 @@
         "parentPath": [
           "id"
         ]
-      }
+      }]
     }
   }
 ]

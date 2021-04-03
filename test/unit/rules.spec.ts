@@ -264,17 +264,25 @@ describe('ARM Template Rule', () => {
         path: ['name'],
         operator: '==' as Operator,
         value: 'failingValue',
-        and: {
-          resourceType:
-            'Microsoft.Storage/storageAccounts/privateEndpointConnections',
-          path: ['apiVersion'],
-          operator: '==' as Operator,
-          parentPath: ['apiVersion'],
-        },
+        and: [
+          {
+            resourceType:
+              'Microsoft.Storage/storageAccounts/privateEndpointConnections',
+            path: ['apiVersion'],
+            operator: '==' as Operator,
+            parentPath: ['apiVersion'],
+          },
+        ],
       },
     });
     const actual = rule.getValue(
-      rule.evaluation.and as ARMEvaluation,
+      {
+        resourceType:
+          'Microsoft.Storage/storageAccounts/privateEndpointConnections',
+        path: ['apiVersion'],
+        operator: '==' as Operator,
+        parentPath: ['apiVersion'],
+      },
       resource
     );
     expect(actual).to.equal('2021-01-01');
@@ -289,17 +297,25 @@ describe('ARM Template Rule', () => {
         path: ['name'],
         operator: '!=' as Operator,
         value: 'storageAccountName',
-        and: {
-          resourceType:
-            'Microsoft.Storage/storageAccounts/privateEndpointConnections',
-          path: ['dependsOn'],
-          operator: '==' as Operator,
-          parentPath: ['id'],
-        },
+        and: [
+          {
+            resourceType:
+              'Microsoft.Storage/storageAccounts/privateEndpointConnections',
+            path: ['dependsOn'],
+            operator: '==' as Operator,
+            parentPath: ['id'],
+          },
+        ],
       },
     });
     const resource = testResources[0];
-    const andEvalutaion = rule.evaluation.and as ARMEvaluation;
+    const andEvalutaion = {
+      resourceType:
+        'Microsoft.Storage/storageAccounts/privateEndpointConnections',
+      path: ['dependsOn'],
+      operator: '==' as Operator,
+      parentPath: ['id'],
+    };
     const actualValue = rule.getValue(andEvalutaion, resource);
     const expectedValue =
       "[resourceId('Microsoft.Storage/storageAccounts', 'storageAccountName')]";
@@ -427,13 +443,15 @@ describe('ARM Template Rule', () => {
         path: ['name'],
         operator: '==' as Operator,
         value: 'valueToFailFirstEval',
-        and: {
-          resourceType:
-            'Microsoft.Storage/storageAccounts/privateEndpointConnections',
-          path: ['name'],
-          operator: '==' as Operator,
-          value: 'privateEndpointConnectionName',
-        },
+        and: [
+          {
+            resourceType:
+              'Microsoft.Storage/storageAccounts/privateEndpointConnections',
+            path: ['name'],
+            operator: '==' as Operator,
+            value: 'privateEndpointConnectionName',
+          },
+        ],
       },
     });
     const ruleShouldFail = new ARMTemplateRule({
@@ -446,13 +464,15 @@ describe('ARM Template Rule', () => {
         path: ['name'],
         operator: '==' as Operator,
         value: 'valueToFailFirstEval',
-        and: {
-          resourceType:
-            'Microsoft.Storage/storageAccounts/privateEndpointConnections',
-          path: ['name'],
-          operator: '!=' as Operator,
-          value: 'privateEndpointConnectionName',
-        },
+        and: [
+          {
+            resourceType:
+              'Microsoft.Storage/storageAccounts/privateEndpointConnections',
+            path: ['name'],
+            operator: '!=' as Operator,
+            value: 'privateEndpointConnectionName',
+          },
+        ],
       },
     });
 
@@ -492,13 +512,15 @@ describe('ARM Template Rule', () => {
         path: ['name'],
         operator: '!=' as Operator,
         value: 'passingValue',
-        or: {
-          resourceType:
-            'Microsoft.Storage/storageAccounts/privateEndpointConnections',
-          path: ['name'],
-          operator: '==' as Operator,
-          value: 'privateEndpointConnectionName',
-        },
+        or: [
+          {
+            resourceType:
+              'Microsoft.Storage/storageAccounts/privateEndpointConnections',
+            path: ['name'],
+            operator: '==' as Operator,
+            value: 'privateEndpointConnectionName',
+          },
+        ],
       },
     });
     const ruleShouldFail = new ARMTemplateRule({
@@ -511,13 +533,15 @@ describe('ARM Template Rule', () => {
         path: ['name'],
         operator: '!=' as Operator,
         value: 'passingValue',
-        or: {
-          resourceType:
-            'Microsoft.Storage/storageAccounts/privateEndpointConnections',
-          path: ['name'],
-          operator: '!=' as Operator,
-          value: 'privateEndpointConnectionName',
-        },
+        or: [
+          {
+            resourceType:
+              'Microsoft.Storage/storageAccounts/privateEndpointConnections',
+            path: ['name'],
+            operator: '!=' as Operator,
+            value: 'privateEndpointConnectionName',
+          },
+        ],
       },
     });
 

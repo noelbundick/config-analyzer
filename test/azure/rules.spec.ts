@@ -75,13 +75,15 @@ describe('ARM Template Rule', function () {
         path: ['properties', 'networkAcls', 'defaultAction'],
         operator: '!=' as Operator,
         value: 'Allow',
-        and: {
-          resourceType:
-            'Microsoft.Storage/storageAccounts/privateEndpointConnections',
-          path: ['dependsOn'],
-          operator: 'notIn' as Operator,
-          parentPath: ['id'],
-        },
+        and: [
+          {
+            resourceType:
+              'Microsoft.Storage/storageAccounts/privateEndpointConnections',
+            path: ['dependsOn'],
+            operator: 'notIn' as Operator,
+            parentPath: ['id'],
+          },
+        ],
       },
     });
     const template = await ARMTemplateRule.getTemplate(
@@ -104,7 +106,7 @@ describe('ARM Template Rule', function () {
       total: 2,
       resourceIds: [
         `subscriptions/${target.subscriptionId}/resourceGroups/${target.groupName}/providers/${rule.evaluation.resourceType}/${storageAccountName}`,
-        `subscriptions/${target.subscriptionId}/resourceGroups/${target.groupName}/providers/${rule.evaluation.and?.resourceType}/${privateEndpointName}`,
+        `subscriptions/${target.subscriptionId}/resourceGroups/${target.groupName}/providers/Microsoft.Storage/storageAccounts/privateEndpointConnections/${privateEndpointName}`,
       ],
     };
     const result = rule.execute(target);

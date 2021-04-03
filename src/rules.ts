@@ -54,8 +54,8 @@ export interface ARMEvaluation {
   operator: Operator;
   value?: string | number;
   parentPath?: string[];
-  and?: ARMEvaluation;
-  or?: ARMEvaluation;
+  and?: ARMEvaluation[];
+  or?: ARMEvaluation[];
 }
 
 export class ARMTemplateRule implements BaseRule<ARMTarget> {
@@ -110,16 +110,19 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
     prev?: {
       resource: ARMResource;
       evaluation: ARMEvaluation;
+      filteredResource?: ARMResource[] | null;
     }
   ) {
-    // if (passing) return [];
-    // let results = prev ? prev.results : [];
-    const filteredResources = target.templateResources.filter(
-      (r: ARMResource) => r.type === evaluation.resourceType
-    );
+    let filteredResources: ARMResource[];
+    if (prev?.filteredResource) {
+      filteredResources = prev?.filteredResource;
+    } else {
+      filteredResources = target.templateResources.filter(
+        (r: ARMResource) => r.type === evaluation.resourceType
+      );
+    }
     for (const r of filteredResources) {
-      let passing;
-      const next = {resource: r, evaluation};
+      let passing = true;
       const actualValue = this.resolveResourcePath(r, evaluation.path);
       const expectedValue = this.getValue(evaluation, prev?.resource);
       switch (evaluation.operator) {
@@ -127,36 +130,24 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
           if (actualValue !== expectedValue) {
             results.push(this.getResourceId(r, target));
             passing = false;
-          } else {
-            results = [];
-            passing = true;
           }
           break;
         case '!=':
           if (actualValue === expectedValue) {
             results.push(this.getResourceId(r, target));
             passing = false;
-          } else {
-            results = [];
-            passing = true;
           }
           break;
         case 'in':
           if (!actualValue.includes(expectedValue)) {
             results.push(this.getResourceId(r, target));
             passing = false;
-          } else {
-            results = [];
-            passing = true;
           }
           break;
         case 'notIn':
           if (actualValue.includes(expectedValue)) {
             results.push(this.getResourceId(r, target));
             passing = false;
-          } else {
-            results = [];
-            passing = true;
           }
           break;
         default:
@@ -165,13 +156,27 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
           );
       }
 
+      const next = {
+        resource: r,
+        evaluation,
+        filteredResources: null as ARMResource[] | null,
+      };
+      if (passing) results = [];
       if (evaluation.and && !passing) {
-        results = this.evaluate(evaluation.and, target, results, next);
-      } else {
-        passing = true;
+        for (const e of evaluation.and) {
+          if (evaluation.resourceType === e.resourceType) {
+            next.filteredResources = filteredResources;
+          }
+          results = this.evaluate(e, target, results, next);
+        }
       }
       if (evaluation.or && passing) {
-        results = this.evaluate(evaluation.or, target, results, next);
+        for (const e of evaluation.or) {
+          if (evaluation.resourceType === e.resourceType) {
+            next.filteredResources = filteredResources;
+          }
+          this.evaluate(e, target, results, next);
+        }
       }
     }
     return results;
