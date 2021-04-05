@@ -96,6 +96,7 @@ describe('ARM Template Rule', function () {
       template: template._response.parsedBody.template,
     };
     // clean this up to not have hard coded values
+    // this can happen when we refactor the test ARM Temlplate
     const storageAccountName = 'azabhcf24jbcuxwo';
     const privateEndpointName = 'BlobStorageAccountPrivateEndpoint';
     const expectedResult = {

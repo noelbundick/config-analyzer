@@ -168,6 +168,8 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
       if (evaluation.and && !isPassing) {
         for (const e of evaluation.and) {
           const result = this.evaluate(e, target, results, current);
+          // if the result is passing the resource is removed from the results
+          // or if it is evaluating the same resource it will remove the duplicate resource from the results
           if (
             result.isPassing ||
             (!result.isPassing && e.resourceType === evaluation.resourceType)
@@ -219,6 +221,7 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
   toResourceIdARMFunction(resource: ARMResource) {
     let path;
     // needs logic to convert ARM functions
+    // https://docs.microsoft.com/en-us/azure/azure-resource-manager/templates/template-functions
     if (this.isARMFunction(resource.name)) {
       // this currently only removes the array []
       path = resource.name.slice(1, resource.name.length - 1);
