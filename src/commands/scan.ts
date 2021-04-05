@@ -42,7 +42,7 @@ export default class Scan extends Command {
     // update description
     template: flags.boolean({
       char: 't',
-      description: 'runs template rules',
+      description: 'runs rules against an exported ARM template',
       dependsOn: ['scope'],
     }),
     file: flags.string({
@@ -123,14 +123,15 @@ export default class Scan extends Command {
       cli.action.start('Fetching template. This may take a few moments');
       const template = await ARMTemplateRule.getTemplate(
         flags.scope[0],
-        flags.group[0]
+        flags.group[0],
+        new DefaultAzureCredential()
       );
       cli.action.stop();
       target = {
         type: RuleType.ARM,
         subscriptionId: flags.scope[0],
         groupName: flags.group[0],
-        templateResources: template._response.parsedBody.template.resources,
+        template: template._response.parsedBody.template,
       };
     } else if (flags.scope) {
       if (flags.scope.length > 1 && flags.group) {

@@ -18,16 +18,18 @@
       ],
       "operator": "!=",
       "value": 0,
-      "and": [{
-        "resourceType": "Microsoft.EventHub/namespaces/networkRuleSets",
-        "path": [
-          "properties",
-          "virtualNetworkRules",
-          "length"
-        ],
-        "operator": "!=",
-        "value": 0
-      }]
+      "and": [
+        {
+          "resourceType": "Microsoft.EventHub/namespaces/networkRuleSets",
+          "path": [
+            "properties",
+            "virtualNetworkRules",
+            "length"
+          ],
+          "operator": "!=",
+          "value": 0
+        }
+      ]
     }
   },
   {
@@ -43,16 +45,18 @@
       ],
       "operator": "!=",
       "value": "Allow",
-      "or": [{
-        "resourceType": "Microsoft.Network/privateEndpoints",
-        "path": [
-          "dependsOn"
-        ],
-        "operator": "notIn",
-        "parentPath": [
-          "id"
-        ]
-      }]
+      "and": [
+        {
+          "resourceType": "Microsoft.Network/privateEndpoints",
+          "path": [
+            "dependsOn"
+          ],
+          "operator": "notIn",
+          "parentPath": [
+            "id"
+          ]
+        }
+      ]
     }
   }
 ]

@@ -7,7 +7,6 @@ import {
   RuleType,
 } from '../../src/rules';
 import {credential, resourceGroup, resourceGroup2, subscriptionId} from '.';
-import {DefaultAzureCredential} from '@azure/identity';
 
 describe('Resource Graph Rule', function () {
   this.slow(6000);
@@ -23,7 +22,7 @@ describe('Resource Graph Rule', function () {
     const target: ResourceGraphTarget = {
       type: RuleType.ResourceGraph,
       subscriptionIds: [subscriptionId],
-      credential: new DefaultAzureCredential(),
+      credential,
     };
     const result = await rule.execute(target);
     assert.equal(rule.name, result.ruleName);
@@ -48,7 +47,7 @@ describe('Resource Graph Rule', function () {
     const target: ResourceGraphTarget = {
       type: RuleType.ResourceGraph,
       subscriptionIds: [subscriptionId],
-      credential: new DefaultAzureCredential(),
+      credential,
       groupNames,
     };
     const nonExistingGroups = await ResourceGraphRule.getNonExistingResourceGroups(
@@ -77,8 +76,7 @@ describe('ARM Template Rule', function () {
         value: 'Allow',
         and: [
           {
-            resourceType:
-              'Microsoft.Storage/storageAccounts/privateEndpointConnections',
+            resourceType: 'Microsoft.Network/privateEndpoints',
             path: ['dependsOn'],
             operator: 'notIn' as Operator,
             parentPath: ['id'],
@@ -88,25 +86,25 @@ describe('ARM Template Rule', function () {
     });
     const template = await ARMTemplateRule.getTemplate(
       subscriptionId,
-      resourceGroup
+      resourceGroup,
+      credential
     );
     const target = {
       type: 'ARM' as RuleType.ARM,
       subscriptionId: subscriptionId,
       groupName: resourceGroup,
-      templateResources: template._response.parsedBody.template.resources,
+      template: template._response.parsedBody.template,
     };
     // clean this up to not have hard coded values
     const storageAccountName = 'azabhcf24jbcuxwo';
-    const privateEndpointName =
-      'azabhcf24jbcuxwo/azabhcf24jbcuxwo.1274fbe6-5b85-4103-8412-7557abd3bc95';
+    const privateEndpointName = 'BlobStorageAccountPrivateEndpoint';
     const expectedResult = {
       ruleName: rule.name,
       description: rule.description,
       total: 2,
       resourceIds: [
         `subscriptions/${target.subscriptionId}/resourceGroups/${target.groupName}/providers/${rule.evaluation.resourceType}/${storageAccountName}`,
-        `subscriptions/${target.subscriptionId}/resourceGroups/${target.groupName}/providers/Microsoft.Storage/storageAccounts/privateEndpointConnections/${privateEndpointName}`,
+        `subscriptions/${target.subscriptionId}/resourceGroups/${target.groupName}/providers/Microsoft.Network/privateEndpoints/${privateEndpointName}`,
       ],
     };
     const result = rule.execute(target);

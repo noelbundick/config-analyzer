@@ -1,12 +1,9 @@
 import {expect} from 'chai';
 import {
-  ARMResource,
-  ARMTarget,
   ARMTemplateRule,
   ResourceGraphRule,
   RuleType,
   Operator,
-  ARMEvaluation,
 } from '../../src/rules';
 import {ResourceGraphModels} from '@azure/arm-resourcegraph';
 import {HttpHeadersLike, WebResourceLike} from '@azure/ms-rest-js';
@@ -96,36 +93,41 @@ describe('ARM Template Rule', () => {
       value: 'Allow',
     },
   });
-
-  const testResources = [
-    {
-      type: 'Microsoft.Storage/storageAccounts',
-      apiVersion: '2021-01-01',
-      name: 'storageAccountName',
-      location: 'westus2',
-      sku: {
-        name: 'Standard_LRS',
-        tier: 'Standard',
-      },
-      kind: 'StorageV2',
-      properties: {
-        networkAcls: {
-          bypass: 'AzureServices',
-          virtualNetworkRules: ['testVNetRule'],
-          ipRules: [],
-          defaultAction: 'Allow',
+  const template = {
+    $schema: '',
+    contentVersion: '',
+    parameters: {},
+    variables: {},
+    resources: [
+      {
+        type: 'Microsoft.Storage/storageAccounts',
+        apiVersion: '2021-01-01',
+        name: 'storageAccountName',
+        properties: {
+          networkAcls: {
+            bypass: 'AzureServices',
+            virtualNetworkRules: ['testVNetRule'],
+            ipRules: [],
+            defaultAction: 'Allow',
+          },
         },
       },
-    },
-    {
-      type: 'Microsoft.Storage/storageAccounts/privateEndpointConnections',
-      apiVersion: '2021-01-01',
-      name: 'privateEndpointConnectionName',
-      dependsOn: [
-        "[resourceId('Microsoft.Storage/storageAccounts', storageAccountName)]",
-      ],
-    },
-  ];
+      {
+        type: '"Microsoft.Network/privateEndpoints',
+        apiVersion: '2021-01-01',
+        name: 'privateEndpointName',
+        dependsOn: [
+          "[resourceId('Microsoft.Storage/storageAccounts', storageAccountName)]",
+        ],
+      },
+    ],
+  };
+  const testARMTarget = {
+    type: 'ARM' as RuleType.ARM,
+    subscriptionId: subscriptionId,
+    groupName: resourceGroup,
+    template: template,
+  };
 
   it('can produce a scan result', () => {
     const resourceIds = ['id1', 'id2'];
@@ -138,12 +140,12 @@ describe('ARM Template Rule', () => {
 
   it('can build an a resourceId ARM template function with an unparameterized name', () => {
     const resource = {
-      type: 'Microsoft.Storage/storageAccounts/blobServices',
+      type: 'Microsoft.Storage/storageAccounts',
       apiVersion: '2021-01-01',
       name: 'someName/default',
     };
     const expectedId =
-      "[resourceId('Microsoft.Storage/storageAccounts/blobServices', 'someName', 'default')]";
+      "[resourceId('Microsoft.Storage/storageAccounts', 'someName', 'default')]";
     const actualId = rule.toResourceIdARMFunction(resource);
     expect(actualId).to.equal(expectedId);
   });
@@ -166,128 +168,54 @@ describe('ARM Template Rule', () => {
       type: 'Microsoft.Storage/storageAccounts',
       name: 'resourceName',
     };
-    const target: ARMTarget = {
-      type: RuleType.ARM,
-      subscriptionId: 'subID',
-      groupName: 'resourceGroupName',
-      templateResources: [resource],
-    };
-    const expectedId = `subscriptions/${target.subscriptionId}/resourceGroups/${target.groupName}/providers/${resource.type}/${resource.name}`;
-    const actualId = rule.getResourceId(resource, target);
+    const expectedId = `subscriptions/${testARMTarget.subscriptionId}/resourceGroups/${testARMTarget.groupName}/providers/${resource.type}/${resource.name}`;
+    const actualId = rule.getResourceId(resource, testARMTarget);
     expect(actualId).to.equal(expectedId);
-  });
-  it('returns the resource name when a subscription ID and resourceGroup is not provided in the target', () => {
-    const resource = {
-      apiVersion: '2019-06-01',
-      type: 'Microsoft.Storage/storageAccounts',
-      name: "[parameters('name')]",
-      location: '[resourceGroup().location]',
-      sku: {
-        name: 'Standard_LRS',
-      },
-      kind: 'StorageV2',
-    };
-    const target: ARMTarget = {
-      type: RuleType.ARM,
-      templateResources: [] as ARMResource[],
-    };
-    const actual = rule.getResourceId(resource, target);
-    expect(actual).to.equal(resource.name);
-  });
-
-  it('returns the resource name when a subscription ID and resourceGroup is provided in the target but the name is parameterized', () => {
-    const resource = {
-      apiVersion: '2019-06-01',
-      type: 'Microsoft.Storage/storageAccounts',
-      name: "[parameters('name')]",
-      location: '[resourceGroup().location]',
-      sku: {
-        name: 'Standard_LRS',
-      },
-      kind: 'StorageV2',
-    };
-    const target: ARMTarget = {
-      type: RuleType.ARM,
-      templateResources: [] as ARMResource[],
-    };
-    const actual = rule.getResourceId(resource, target);
-    expect(actual).to.equal(resource.name);
   });
 
   it('can resolve a valid path to an ARM template resource', () => {
     const path = ['properties', 'networkAcls', 'defaultAction'];
-    const resource = {
-      type: 'Microsoft.Storage/storageAccounts',
-      apiVersion: '2021-01-01',
-      name: 'resourceName',
-      location: 'westus2',
-      properties: {
-        networkAcls: {
-          bypass: 'AzureServices',
-          virtualNetworkRules: [],
-          ipRules: [],
-          defaultAction: 'Allow',
-        },
-      },
-    };
-    const actual = rule.resolveResourcePath(resource, path);
-    expect(actual).to.equal(resource.properties.networkAcls.defaultAction);
+    const resource = template.resources[0];
+    const actual = rule.resolvePath(path, resource);
+    expect(actual).to.equal('Allow');
   });
+
   it('throws an error when resolving an invalid path to an ARM template resource', () => {
-    const path = ['properties', 'networkAcls', 'defaultAction'];
-    const resource = {
-      type: 'Microsoft.Storage/storageAccounts',
-      apiVersion: '2021-01-01',
-      name: 'resourceName',
-      properties: {},
-    };
+    const path = ['properties', 'networkAcls', 'invalidValue'];
+    const resource = template.resources[0];
     const expectedErrorMsg =
-      "The path 'properties.networkAcls.defaultAction' was not resolved on the resource Microsoft.Storage/storageAccounts/resourceName";
+      "The path 'properties.networkAcls.invalidValue' was not resolved on the resource Microsoft.Storage/storageAccounts/storageAccountName";
     expect(() => {
-      rule.resolveResourcePath(resource, path);
+      rule.resolvePath(path, resource);
     }).to.throw(expectedErrorMsg);
   });
 
   it('can get an expected value when a value key is provided in the evalutation', () => {
-    const actual = rule.getValue(rule.evaluation);
+    const actual = rule.getExpectedValue(rule.evaluation);
     expect(actual).to.equal('Allow');
   });
 
-  it('can get a parent value', () => {
-    const resource = testResources[0];
-    const rule = new ARMTemplateRule({
-      type: 'ARM' as RuleType.ARM,
-      name: 'and-rule',
-      description: 'A rule with a an and evaluation and a parent parent',
-      evaluation: {
-        resourceType: 'Microsoft.Storage/storageAccounts',
-        path: ['name'],
-        operator: '==' as Operator,
-        value: 'failingValue',
-        and: [
-          {
-            resourceType:
-              'Microsoft.Storage/storageAccounts/privateEndpointConnections',
-            path: ['apiVersion'],
-            operator: '==' as Operator,
-            parentPath: ['apiVersion'],
-          },
-        ],
-      },
-    });
-    const actual = rule.getValue(
-      {
-        resourceType:
-          'Microsoft.Storage/storageAccounts/privateEndpointConnections',
-        path: ['apiVersion'],
-        operator: '==' as Operator,
-        parentPath: ['apiVersion'],
-      },
-      resource
-    );
+  it('can get a parent value from an evalution', () => {
+    const resource = template.resources[0];
+    const evaluation = {
+      resourceType: '"Microsoft.Network/privateEndpoints',
+      path: ['apiVersion'],
+      operator: '==' as Operator,
+      parentPath: ['apiVersion'],
+    };
+    const actual = rule.getExpectedValue(evaluation, resource);
     expect(actual).to.equal('2021-01-01');
   });
+
   it("can get a parent value when parentPath is ['id']", () => {
+    const andEvalutaions = [
+      {
+        resourceType: '"Microsoft.Network/privateEndpoints',
+        path: ['dependsOn'],
+        operator: '==' as Operator,
+        parentPath: ['id'],
+      },
+    ];
     const rule = new ARMTemplateRule({
       type: 'ARM' as RuleType.ARM,
       name: 'and-rule',
@@ -297,143 +225,162 @@ describe('ARM Template Rule', () => {
         path: ['name'],
         operator: '!=' as Operator,
         value: 'storageAccountName',
-        and: [
-          {
-            resourceType:
-              'Microsoft.Storage/storageAccounts/privateEndpointConnections',
-            path: ['dependsOn'],
-            operator: '==' as Operator,
-            parentPath: ['id'],
-          },
-        ],
+        and: andEvalutaions,
       },
     });
-    const resource = testResources[0];
-    const andEvalutaion = {
-      resourceType:
-        'Microsoft.Storage/storageAccounts/privateEndpointConnections',
-      path: ['dependsOn'],
-      operator: '==' as Operator,
-      parentPath: ['id'],
-    };
-    const actualValue = rule.getValue(andEvalutaion, resource);
+    const resource = template.resources[0];
+    const actualValue = rule.getExpectedValue(andEvalutaions[0], resource);
     const expectedValue =
       "[resourceId('Microsoft.Storage/storageAccounts', 'storageAccountName')]";
     expect(actualValue).to.equal(expectedValue);
   });
-  it('can evalute an evaluation with == operator', () => {
-    const evalShouldPass = {
-      resourceType: 'Microsoft.Storage/storageAccounts',
-      path: ['properties', 'networkAcls', 'bypass'],
-      operator: '==' as Operator,
-      value: 'AzureServices',
-    };
-    const evalShouldFail = {
-      resourceType: 'Microsoft.Storage/storageAccounts',
-      path: ['properties', 'networkAcls', 'bypass'],
-      operator: '==' as Operator,
-      value: 'Azure',
-    };
-    const target = {
-      type: 'ARM' as RuleType.ARM,
-      subscriptionId: subscriptionId,
-      groupName: resourceGroup,
-      templateResources: testResources,
-    };
-    const resourceId = rule.getResourceId(testResources[0], target);
-    const resultShouldPass = rule.evaluate(evalShouldPass, target, []);
-    const resultShouldFail = rule.evaluate(evalShouldFail, target, []);
-    expect(resultShouldPass).to.be.instanceOf(Array);
-    expect(resultShouldPass.length).to.equal(0);
-    expect(resultShouldFail.length).to.equal(1);
-    expect(resultShouldFail[0]).to.equal(resourceId);
-  });
-  it('can evalute an evaluation with != operator', () => {
-    const evalShouldPass = {
-      resourceType: 'Microsoft.Storage/storageAccounts',
-      path: ['properties', 'networkAcls', 'bypass'],
-      operator: '!=' as Operator,
-      value: 'Azure',
-    };
-    const evalShouldFail = {
-      resourceType: 'Microsoft.Storage/storageAccounts',
-      path: ['properties', 'networkAcls', 'bypass'],
-      operator: '!=' as Operator,
-      value: 'AzureServices',
-    };
 
-    const target = {
-      type: 'ARM' as RuleType.ARM,
-      subscriptionId: subscriptionId,
-      groupName: resourceGroup,
-      templateResources: testResources,
-    };
-    const resourceId = rule.getResourceId(testResources[0], target);
-    const resultShouldPass = rule.evaluate(evalShouldPass, target, []);
-    const resultShouldFail = rule.evaluate(evalShouldFail, target, []);
-    expect(resultShouldPass).to.be.instanceOf(Array);
-    expect(resultShouldPass.length).to.equal(0);
-    expect(resultShouldFail.length).to.equal(1);
-    expect(resultShouldFail[0]).to.equal(resourceId);
+  it('can evalute an passing evalution with == operator', () => {
+    const rule = new ARMTemplateRule({
+      type: RuleType.ARM,
+      name: 'test-rule',
+      description: 'use for testing rule methods',
+      evaluation: {
+        resourceType: 'Microsoft.Storage/storageAccounts',
+        path: ['properties', 'networkAcls', 'bypass'],
+        operator: '==' as Operator,
+        value: 'AzureServices',
+      },
+    });
+    const evalResults = rule.evaluate(rule.evaluation, testARMTarget);
+    expect(evalResults.results).to.be.instanceOf(Array);
+    expect(evalResults.results.length).to.equal(0);
   });
-  it('can evalute an evaluation with in operator', () => {
-    const evalShouldPass = {
-      resourceType: 'Microsoft.Storage/storageAccounts',
-      path: ['properties', 'networkAcls', 'virtualNetworkRules'],
-      operator: 'in' as Operator,
-      value: 'testVNetRule',
-    };
-    const evalShouldFail = {
-      resourceType: 'Microsoft.Storage/storageAccounts',
-      path: ['properties', 'networkAcls', 'virtualNetworkRules'],
-      operator: 'in' as Operator,
-      value: 'shouldntBeFound',
-    };
 
-    const target = {
-      type: 'ARM' as RuleType.ARM,
-      subscriptionId: subscriptionId,
-      groupName: resourceGroup,
-      templateResources: testResources,
-    };
-    const resourceId = rule.getResourceId(testResources[0], target);
-    const resultShouldPass = rule.evaluate(evalShouldPass, target, []);
-    const resultShouldFail = rule.evaluate(evalShouldFail, target, []);
-    expect(resultShouldPass).to.be.instanceOf(Array);
-    expect(resultShouldPass.length).to.equal(0);
-    expect(resultShouldFail.length).to.equal(1);
-    expect(resultShouldFail[0]).to.equal(resourceId);
+  it('can evalute an failing evaluation with == operator', () => {
+    const rule = new ARMTemplateRule({
+      type: RuleType.ARM,
+      name: 'test-rule',
+      description: 'use for testing rule methods',
+      evaluation: {
+        resourceType: 'Microsoft.Storage/storageAccounts',
+        path: ['properties', 'networkAcls', 'bypass'],
+        operator: '==' as Operator,
+        value: 'nonPassingValue',
+      },
+    });
+    const evalResults = rule.evaluate(rule.evaluation, testARMTarget);
+    const resourceId = rule.getResourceId(template.resources[0], testARMTarget);
+    expect(evalResults.results).to.be.instanceOf(Array);
+    expect(evalResults.results).to.contain(resourceId);
+    expect(evalResults.results.length).to.equal(1);
   });
-  it('can evalute an evaluation with notIn operator', () => {
-    const evalShouldPass = {
-      resourceType: 'Microsoft.Storage/storageAccounts',
-      path: ['properties', 'networkAcls', 'virtualNetworkRules'],
-      operator: 'notIn' as Operator,
-      value: 'notFoundValue',
-    };
-    const evalShouldFail = {
-      resourceType: 'Microsoft.Storage/storageAccounts',
-      path: ['properties', 'networkAcls', 'virtualNetworkRules'],
-      operator: 'notIn' as Operator,
-      value: 'testVNetRule',
-    };
 
-    const target = {
-      type: 'ARM' as RuleType.ARM,
-      subscriptionId: subscriptionId,
-      groupName: resourceGroup,
-      templateResources: testResources,
-    };
-    const resourceId = rule.getResourceId(testResources[0], target);
-    const resultShouldPass = rule.evaluate(evalShouldPass, target, []);
-    const resultShouldFail = rule.evaluate(evalShouldFail, target, []);
-    expect(resultShouldPass).to.be.instanceOf(Array);
-    expect(resultShouldPass.length).to.equal(0);
-    expect(resultShouldFail.length).to.equal(1);
-    expect(resultShouldFail[0]).to.equal(resourceId);
+  it('can evalute a passing evaluation with != operator', () => {
+    const rule = new ARMTemplateRule({
+      type: RuleType.ARM,
+      name: 'test-rule',
+      description: 'use for testing rule methods',
+      evaluation: {
+        resourceType: 'Microsoft.Storage/storageAccounts',
+        path: ['properties', 'networkAcls', 'bypass'],
+        operator: '!=' as Operator,
+        value: 'passingValue',
+      },
+    });
+    const evalResults = rule.evaluate(rule.evaluation, testARMTarget);
+    expect(evalResults.results).to.be.instanceOf(Array);
+    expect(evalResults.results.length).to.equal(0);
   });
-  it("can execute an evaluation with 'and' key", () => {
-    const ruleShouldPass = new ARMTemplateRule({
+
+  it('can evalute a failing evaluation with != operator', () => {
+    const rule = new ARMTemplateRule({
+      type: RuleType.ARM,
+      name: 'test-rule',
+      description: 'use for testing rule methods',
+      evaluation: {
+        resourceType: 'Microsoft.Storage/storageAccounts',
+        path: ['properties', 'networkAcls', 'bypass'],
+        operator: '!=' as Operator,
+        value: 'AzureServices',
+      },
+    });
+    const evalResults = rule.evaluate(rule.evaluation, testARMTarget);
+    const resourceId = rule.getResourceId(template.resources[0], testARMTarget);
+    expect(evalResults.results).to.be.instanceOf(Array);
+    expect(evalResults.results).to.contain(resourceId);
+    expect(evalResults.results.length).to.equal(1);
+  });
+
+  it('can evalute a passing evaluation with in operator', () => {
+    const rule = new ARMTemplateRule({
+      type: RuleType.ARM,
+      name: 'test-rule',
+      description: 'use for testing rule methods',
+      evaluation: {
+        resourceType: 'Microsoft.Storage/storageAccounts',
+        path: ['properties', 'networkAcls', 'virtualNetworkRules'],
+        operator: 'in' as Operator,
+        value: 'testVNetRule',
+      },
+    });
+    const evalResults = rule.evaluate(rule.evaluation, testARMTarget);
+    expect(evalResults.results).to.be.instanceOf(Array);
+    expect(evalResults.results.length).to.equal(0);
+  });
+
+  it('can evalute a failing evaluation with in operator', () => {
+    const rule = new ARMTemplateRule({
+      type: RuleType.ARM,
+      name: 'test-rule',
+      description: 'use for testing rule methods',
+      evaluation: {
+        resourceType: 'Microsoft.Storage/storageAccounts',
+        path: ['properties', 'networkAcls', 'virtualNetworkRules'],
+        operator: 'in' as Operator,
+        value: 'failingValue',
+      },
+    });
+    const evalResults = rule.evaluate(rule.evaluation, testARMTarget);
+    const resourceId = rule.getResourceId(template.resources[0], testARMTarget);
+    expect(evalResults.results).to.be.instanceOf(Array);
+    expect(evalResults.results).to.contain(resourceId);
+    expect(evalResults.results.length).to.equal(1);
+  });
+
+  it('can evalute a passing evaluation with notIn operator', () => {
+    const rule = new ARMTemplateRule({
+      type: RuleType.ARM,
+      name: 'test-rule',
+      description: 'use for testing rule methods',
+      evaluation: {
+        resourceType: 'Microsoft.Storage/storageAccounts',
+        path: ['properties', 'networkAcls', 'virtualNetworkRules'],
+        operator: 'notIn' as Operator,
+        value: 'failingValue',
+      },
+    });
+    const evalResults = rule.evaluate(rule.evaluation, testARMTarget);
+    expect(evalResults.results).to.be.instanceOf(Array);
+    expect(evalResults.results.length).to.equal(0);
+  });
+
+  it('can evalute a failing evaluation with notIn operator', () => {
+    const rule = new ARMTemplateRule({
+      type: RuleType.ARM,
+      name: 'test-rule',
+      description: 'use for testing rule methods',
+      evaluation: {
+        resourceType: 'Microsoft.Storage/storageAccounts',
+        path: ['properties', 'networkAcls', 'virtualNetworkRules'],
+        operator: 'notIn' as Operator,
+        value: 'testVNetRule',
+      },
+    });
+    const evalResults = rule.evaluate(rule.evaluation, testARMTarget);
+    const resourceId = rule.getResourceId(template.resources[0], testARMTarget);
+    expect(evalResults.results).to.be.instanceOf(Array);
+    expect(evalResults.results).to.contain(resourceId);
+    expect(evalResults.results.length).to.equal(1);
+  });
+
+  it("can execute a passing evaluation with 'and' key", async () => {
+    const rule = new ARMTemplateRule({
       name: 'test-and-rule',
       description:
         "used for testing a rule with an 'and' evalutation - first eval should fail and second eval should pass",
@@ -442,132 +389,119 @@ describe('ARM Template Rule', () => {
         resourceType: 'Microsoft.Storage/storageAccounts',
         path: ['name'],
         operator: '==' as Operator,
-        value: 'valueToFailFirstEval',
+        value: 'valueToFail',
         and: [
           {
-            resourceType:
-              'Microsoft.Storage/storageAccounts/privateEndpointConnections',
+            resourceType: '"Microsoft.Network/privateEndpoints',
             path: ['name'],
             operator: '==' as Operator,
-            value: 'privateEndpointConnectionName',
+            value: 'privateEndpointName',
           },
         ],
       },
     });
-    const ruleShouldFail = new ARMTemplateRule({
+    const expectedResult: ScanResult = {
+      ruleName: rule.name,
+      description: rule.description,
+      total: 0,
+      resourceIds: [],
+    };
+    const resultShouldPass = rule.execute(testARMTarget);
+    expect(resultShouldPass).to.deep.equal(expectedResult, 'passing');
+  });
+
+  it("can execute a failing evaluation with 'and' key", async () => {
+    const rule = new ARMTemplateRule({
       name: 'test-and-rule',
       description:
-        "used for testing a rule with an 'and' evalutation - first and second evals should fail'",
+        "used for testing a rule with an 'and' evalutation - first eval should fail and second eval should pass",
       type: 'ARM' as RuleType.ARM,
       evaluation: {
         resourceType: 'Microsoft.Storage/storageAccounts',
         path: ['name'],
         operator: '==' as Operator,
-        value: 'valueToFailFirstEval',
+        value: 'valueToFail',
         and: [
           {
-            resourceType:
-              'Microsoft.Storage/storageAccounts/privateEndpointConnections',
+            resourceType: '"Microsoft.Network/privateEndpoints',
             path: ['name'],
             operator: '!=' as Operator,
-            value: 'privateEndpointConnectionName',
+            value: 'privateEndpointName',
           },
         ],
       },
     });
-
-    const target = {
-      type: 'ARM' as RuleType.ARM,
-      subscriptionId: subscriptionId,
-      groupName: resourceGroup,
-      templateResources: testResources,
-    };
-    const expectedPassingResult: ScanResult = {
-      ruleName: ruleShouldPass.name,
-      description: ruleShouldPass.description,
-      total: 0,
-      resourceIds: [],
-    };
-    const expectedFailingResult: ScanResult = {
-      ruleName: ruleShouldFail.name,
-      description: ruleShouldFail.description,
+    const expectedResult: ScanResult = {
+      ruleName: rule.name,
+      description: rule.description,
       total: 2,
-      resourceIds: target.templateResources.map(resource =>
-        ruleShouldFail.getResourceId(resource, target)
+      resourceIds: template.resources.map(r =>
+        rule.getResourceId(r, testARMTarget)
       ),
     };
-    const resultShouldPass = ruleShouldPass.execute(target);
-    const resultShouldFail = ruleShouldFail.execute(target);
-    expect(resultShouldPass).to.deep.equal(expectedPassingResult, 'passing');
-    expect(resultShouldFail).to.deep.equal(expectedFailingResult, 'failing');
+    const resultShouldPass = rule.execute(testARMTarget);
+    expect(resultShouldPass).to.deep.equal(expectedResult, 'failing');
   });
-  it("can execute an evaluation with 'or' key", () => {
-    const ruleShouldPass = new ARMTemplateRule({
+
+  it("can execute a passing evaluation with 'or' key", async () => {
+    const rule = new ARMTemplateRule({
       name: 'test-and-rule',
       description:
-        "used for testing a rule with an 'and' evalutation - both evals should pass",
+        "used for testing a rule with an 'and' evalutation - first eval should fail and second eval should pass",
       type: 'ARM' as RuleType.ARM,
       evaluation: {
         resourceType: 'Microsoft.Storage/storageAccounts',
         path: ['name'],
         operator: '!=' as Operator,
-        value: 'passingValue',
+        value: 'valueToPass',
         or: [
           {
-            resourceType:
-              'Microsoft.Storage/storageAccounts/privateEndpointConnections',
+            resourceType: '"Microsoft.Network/privateEndpoints',
             path: ['name'],
             operator: '==' as Operator,
-            value: 'privateEndpointConnectionName',
+            value: 'privateEndpointName',
           },
         ],
       },
     });
-    const ruleShouldFail = new ARMTemplateRule({
-      name: 'test-and-rule',
-      description:
-        "used for testing a rule with an 'and' evalutation - first eval should pass but the second should fail'",
-      type: 'ARM' as RuleType.ARM,
-      evaluation: {
-        resourceType: 'Microsoft.Storage/storageAccounts',
-        path: ['name'],
-        operator: '!=' as Operator,
-        value: 'passingValue',
-        or: [
-          {
-            resourceType:
-              'Microsoft.Storage/storageAccounts/privateEndpointConnections',
-            path: ['name'],
-            operator: '!=' as Operator,
-            value: 'privateEndpointConnectionName',
-          },
-        ],
-      },
-    });
-
-    const target = {
-      type: 'ARM' as RuleType.ARM,
-      subscriptionId: subscriptionId,
-      groupName: resourceGroup,
-      templateResources: testResources,
-    };
-    const expectedPassingResult: ScanResult = {
-      ruleName: ruleShouldPass.name,
-      description: ruleShouldPass.description,
+    const expectedResult: ScanResult = {
+      ruleName: rule.name,
+      description: rule.description,
       total: 0,
       resourceIds: [],
     };
-    const expectedFailingResult: ScanResult = {
-      ruleName: ruleShouldFail.name,
-      description: ruleShouldFail.description,
+    const resultShouldPass = rule.execute(testARMTarget);
+    expect(resultShouldPass).to.deep.equal(expectedResult, 'passing');
+  });
+
+  it("can execute a failing evaluation with 'or' key", async () => {
+    const rule = new ARMTemplateRule({
+      name: 'test-and-rule',
+      description:
+        "used for testing a rule with an 'and' evalutation - first eval should fail and second eval should pass",
+      type: 'ARM' as RuleType.ARM,
+      evaluation: {
+        resourceType: 'Microsoft.Storage/storageAccounts',
+        path: ['name'],
+        operator: '!=' as Operator,
+        value: 'valueToPass',
+        or: [
+          {
+            resourceType: '"Microsoft.Network/privateEndpoints',
+            path: ['name'],
+            operator: '==' as Operator,
+            value: 'failingValue',
+          },
+        ],
+      },
+    });
+    const expectedResult: ScanResult = {
+      ruleName: rule.name,
+      description: rule.description,
       total: 1,
-      resourceIds: [
-        ruleShouldFail.getResourceId(target.templateResources[1], target),
-      ],
+      resourceIds: [rule.getResourceId(template.resources[1], testARMTarget)],
     };
-    const resultShouldPass = ruleShouldPass.execute(target);
-    const resultShouldFail = ruleShouldFail.execute(target);
-    expect(resultShouldPass).to.deep.equal(expectedPassingResult, 'passing');
-    expect(resultShouldFail).to.deep.equal(expectedFailingResult, 'failing');
+    const resultShouldPass = rule.execute(testARMTarget);
+    expect(resultShouldPass).to.deep.equal(expectedResult, 'failing');
   });
 });

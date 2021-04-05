@@ -14,12 +14,6 @@ export enum RuleType {
   ARM = 'ARM',
 }
 
-export interface ARMResource {
-  apiVersion: string;
-  name: string;
-  type: string;
-}
-
 export interface BaseRule<T> {
   name: string;
   description: string;
@@ -39,11 +33,25 @@ interface ResourceGraphQueryResponseColumn {
   type: string | object;
 }
 
+export interface ARMTemplate {
+  $schema: string;
+  contentVersion: string;
+  parameters: {};
+  variables: {};
+  resources: ARMResource[];
+}
+
+export interface ARMResource {
+  apiVersion: string;
+  name: string;
+  type: string;
+}
+
 export interface ARMTarget {
   type: RuleType.ARM;
-  templateResources: ARMResource[];
-  subscriptionId?: string;
-  groupName?: string;
+  template: ARMTemplate;
+  subscriptionId: string;
+  groupName: string;
 }
 
 export type Operator = '==' | '!=' | 'in' | 'notIn';
@@ -56,6 +64,7 @@ export interface ARMEvaluation {
   parentPath?: string[];
   and?: ARMEvaluation[];
   or?: ARMEvaluation[];
+  isPassing?: boolean;
 }
 
 export class ARMTemplateRule implements BaseRule<ARMTarget> {
@@ -76,8 +85,11 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
     this.evaluation = rule.evaluation;
   }
 
-  static async getTemplate(subscriptionId: string, groupName: string) {
-    const credential = new DefaultAzureCredential();
+  static async getTemplate(
+    subscriptionId: string,
+    groupName: string,
+    credential: DefaultAzureCredential
+  ) {
     const client = new ResourceManagementClient(
       new AzureIdentityCredentialAdapter(credential),
       subscriptionId
@@ -89,7 +101,7 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
   }
 
   execute(target: ARMTarget) {
-    const results = this.evaluate(this.evaluation, target, []);
+    const results = this.evaluate(this.evaluation, target).results;
     return this.toScanResult(results);
   }
 
@@ -106,48 +118,42 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
   evaluate(
     evaluation: ARMEvaluation,
     target: ARMTarget,
-    results: string[],
+    results: string[] = [],
     prev?: {
       resource: ARMResource;
       evaluation: ARMEvaluation;
-      filteredResource?: ARMResource[] | null;
     }
   ) {
-    let filteredResources: ARMResource[];
-    if (prev?.filteredResource) {
-      filteredResources = prev?.filteredResource;
-    } else {
-      filteredResources = target.templateResources.filter(
-        (r: ARMResource) => r.type === evaluation.resourceType
-      );
-    }
+    let isPassing = true;
+    const filteredResources = target.template.resources.filter(
+      (r: ARMResource) => r.type === evaluation.resourceType
+    );
     for (const r of filteredResources) {
-      let passing = true;
-      const actualValue = this.resolveResourcePath(r, evaluation.path);
-      const expectedValue = this.getValue(evaluation, prev?.resource);
+      const current = {
+        resource: r,
+        evaluation,
+      };
+      const actualValue = this.resolvePath(evaluation.path, r);
+      const expectedValue = this.getExpectedValue(evaluation, prev?.resource);
       switch (evaluation.operator) {
         case '==':
           if (actualValue !== expectedValue) {
-            results.push(this.getResourceId(r, target));
-            passing = false;
+            isPassing = false;
           }
           break;
         case '!=':
           if (actualValue === expectedValue) {
-            results.push(this.getResourceId(r, target));
-            passing = false;
+            isPassing = false;
           }
           break;
         case 'in':
           if (!actualValue.includes(expectedValue)) {
-            results.push(this.getResourceId(r, target));
-            passing = false;
+            isPassing = false;
           }
           break;
         case 'notIn':
           if (actualValue.includes(expectedValue)) {
-            results.push(this.getResourceId(r, target));
-            passing = false;
+            isPassing = false;
           }
           break;
         default:
@@ -156,33 +162,30 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
           );
       }
 
-      const next = {
-        resource: r,
-        evaluation,
-        filteredResources: null as ARMResource[] | null,
-      };
-      if (passing) results = [];
-      if (evaluation.and && !passing) {
+      if (!isPassing) {
+        results.push(this.getResourceId(r, target));
+      }
+      if (evaluation.and && !isPassing) {
         for (const e of evaluation.and) {
-          if (evaluation.resourceType === e.resourceType) {
-            next.filteredResources = filteredResources;
+          const result = this.evaluate(e, target, results, current);
+          if (
+            result.isPassing ||
+            (!result.isPassing && e.resourceType === evaluation.resourceType)
+          ) {
+            results.pop();
           }
-          results = this.evaluate(e, target, results, next);
         }
       }
-      if (evaluation.or && passing) {
+      if (evaluation.or && isPassing) {
         for (const e of evaluation.or) {
-          if (evaluation.resourceType === e.resourceType) {
-            next.filteredResources = filteredResources;
-          }
-          this.evaluate(e, target, results, next);
+          this.evaluate(e, target, results, current);
         }
       }
     }
-    return results;
+    return {results, isPassing};
   }
 
-  getValue(
+  getExpectedValue(
     evaluation: ARMEvaluation,
     resource?: ARMResource
   ): string | number | string[] {
@@ -192,7 +195,7 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
       if (evaluation.parentPath[0] === 'id') {
         return this.toResourceIdARMFunction(resource);
       } else {
-        return this.resolveResourcePath(resource, evaluation.parentPath);
+        return this.resolvePath(evaluation.parentPath, resource);
       }
     } else {
       throw Error(
@@ -201,7 +204,7 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
     }
   }
 
-  resolveResourcePath(resource: ARMResource, path: string[]) {
+  resolvePath(path: string[], resource: ARMResource) {
     const value = _.get(resource, path, 'NOT FOUND');
     if (value === 'NOT FOUND') {
       throw Error(
@@ -215,8 +218,8 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
 
   toResourceIdARMFunction(resource: ARMResource) {
     let path;
+    // needs logic to convert ARM functions
     if (this.isARMFunction(resource.name)) {
-      // needs logic to convert arm functions
       // this currently only removes the array []
       path = resource.name.slice(1, resource.name.length - 1);
     } else {
@@ -233,12 +236,7 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
   }
 
   getResourceId(resource: ARMResource, target: ARMTarget) {
-    if (target.subscriptionId && target.groupName) {
-      return `subscriptions/${target.subscriptionId}/resourceGroups/${target.groupName}/providers/${resource.type}/${resource.name}`;
-    } else {
-      // add function to convert parameterized names to a value?
-      return resource.name;
-    }
+    return `subscriptions/${target.subscriptionId}/resourceGroups/${target.groupName}/providers/${resource.type}/${resource.name}`;
   }
 }
 
