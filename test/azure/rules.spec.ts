@@ -1,4 +1,4 @@
-import {assert, expect} from 'chai';
+import {expect} from 'chai';
 import {
   ResourceGraphRule,
   ResourceGraphTarget,
@@ -24,15 +24,14 @@ describe('Resource Graph Rule', function () {
       subscriptionIds: [subscriptionId],
       credential: new DefaultAzureCredential(),
     };
-    const expectedResult = {
+    const result = await rule.execute(target);
+    expect(result).to.deep.equal({
       ruleName: rule.name,
       description: rule.description,
       documentationLink: rule.documentationLink,
       total: 0,
       resourceIds: [],
-    };
-    const actualResult = await rule.execute(target);
-    expect(actualResult).to.deep.equal(expectedResult);
+    });
   });
   it('should return any non existing resource groups in a subscription', async () => {
     const nonExistingGroup1 = `i-should-exist-${Date.now()}-1`;
