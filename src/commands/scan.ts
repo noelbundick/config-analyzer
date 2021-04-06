@@ -61,18 +61,34 @@ export default class Scan extends Command {
     super.log(formattedMessage);
   }
 
+  public logSameLine(messages: {message: string; options?: LogOptions}[]) {
+    const formattedMessages = messages
+      .map(l => format(l.message, l.options))
+      .join('');
+    super.log(formattedMessages);
+  }
+
   private printResult(result: ScanResult) {
     this.log(result.ruleName, {bold: true, indent: 4});
     if (result.total) {
-      this.log(`❌ ${result.description}`, {color: 'grey', indent: 6});
-      this.log(`Resources (${result.total}):`, {indent: 6});
+      this.log(`❌  ${result.description}`, {color: 'grey', indent: 6});
+      if (result.documentationLink) {
+        const messages = [
+          {message: 'How to Fix: ', options: {indent: 10}},
+          {message: result.documentationLink, options: {color: 'cyan'}},
+        ];
+        this.logSameLine(messages);
+      }
+      this.log(`Resources (${result.total}):`, {indent: 10});
       for (const id of result.resourceIds) {
-        this.log(id, {indent: 8});
+        this.log(id, {indent: 14});
       }
     } else {
-      this.log(`${chalk.green('✓')} ${chalk.grey(result.description)}`, {
-        indent: 6,
-      });
+      const messages = [
+        {message: '✓  ', options: {color: 'green', indent: 6}},
+        {message: result.description, options: {color: 'grey'}},
+      ];
+      this.logSameLine(messages);
     }
     this.log('');
   }

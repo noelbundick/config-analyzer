@@ -17,22 +17,22 @@ describe('Resource Graph Rule', function () {
       description: 'Intentional bad query',
       query: "Resources | where type =~ 'Microsoft.Compute/virtualMachines2'",
       type: RuleType.ResourceGraph,
+      documentationLink: 'someLink',
     });
     const target: ResourceGraphTarget = {
       type: RuleType.ResourceGraph,
       subscriptionIds: [subscriptionId],
       credential: new DefaultAzureCredential(),
     };
-    const result = await rule.execute(target);
-    assert.equal(rule.name, result.ruleName);
-    assert.equal(rule.description, result.description);
-    assert.containsAllKeys(result, [
-      'ruleName',
-      'description',
-      'total',
-      'resourceIds',
-    ]);
-    assert.equal(result.total, 0);
+    const expectedResult = {
+      ruleName: rule.name,
+      description: rule.description,
+      documentationLink: rule.documentationLink,
+      total: 0,
+      resourceIds: [],
+    };
+    const actualResult = await rule.execute(target);
+    expect(actualResult).to.deep.equal(expectedResult);
   });
   it('should return any non existing resource groups in a subscription', async () => {
     const nonExistingGroup1 = `i-should-exist-${Date.now()}-1`;

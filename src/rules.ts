@@ -15,6 +15,7 @@ export interface BaseRule<T> {
   name: string;
   description: string;
   type: RuleType;
+  documentationLink?: string;
   execute?: (target: T) => Promise<ScanResult>;
 }
 
@@ -69,17 +70,20 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
   name: string;
   description: string;
   query: string;
+  documentationLink?: string;
 
   constructor(rule: {
     type: RuleType.ResourceGraph;
     name: string;
     description: string;
     query: string;
+    documentationLink?: string;
   }) {
     this.type = rule.type;
     this.name = rule.name;
     this.description = rule.description;
     this.query = rule.query;
+    this.documentationLink = rule.documentationLink;
   }
 
   async execute(target: ResourceGraphTarget) {
@@ -142,12 +146,15 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
       throw new Error('Id column was not returned from Azure Resource Graph');
     }
     const resourceIds = rows.map(r => r[idIndex]);
-    const scanResult = {
+    const scanResult: ScanResult = {
       ruleName: this.name,
       description: this.description,
       total: response.totalRecords,
       resourceIds,
     };
+    if (this.documentationLink) {
+      scanResult.documentationLink = this.documentationLink;
+    }
     return scanResult;
   }
 }
