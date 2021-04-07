@@ -14,7 +14,6 @@ Rules are authored in JSON. Every rule contains metadata (`name`, `description`,
 
 ### Rule Types
 - `type`: 'ResourceGraph'
-- `type`: 'ARM'
 ---
 ### Resource Graph Rule
 The execution data for a Resource Graph rule is a Resource Graph query
