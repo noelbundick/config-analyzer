@@ -124,7 +124,13 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
       evaluation: ARMEvaluation;
     }
   ) {
-    let isPassing = true;
+    if (evaluation.and && evaluation.or) {
+      throw Error(
+        'You cannot specify both `and` & `or` in the same level of evaluation'
+      );
+    }
+
+    let isViolated = false;
     const filteredResources = target.template.resources.filter(
       (r: ARMResource) => r.type === evaluation.resourceType
     );
@@ -138,22 +144,22 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
       switch (evaluation.operator) {
         case '==':
           if (actualValue !== expectedValue) {
-            isPassing = false;
+            isViolated = true;
           }
           break;
         case '!=':
           if (actualValue === expectedValue) {
-            isPassing = false;
+            isViolated = true;
           }
           break;
         case 'in':
           if (!actualValue.includes(expectedValue)) {
-            isPassing = false;
+            isViolated = true;
           }
           break;
         case 'notIn':
           if (actualValue.includes(expectedValue)) {
-            isPassing = false;
+            isViolated = true;
           }
           break;
         default:
@@ -162,29 +168,29 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
           );
       }
 
-      if (!isPassing) {
+      if (isViolated) {
         results.push(this.getResourceId(r, target));
       }
-      if (evaluation.and && !isPassing) {
+      if (isViolated && evaluation.and) {
         for (const e of evaluation.and) {
           const result = this.evaluate(e, target, results, current);
           // if the result is passing the resource is removed from the results
           // or if it is evaluating the same resource it will remove the duplicate resource from the results
           if (
-            result.isPassing ||
-            (!result.isPassing && e.resourceType === evaluation.resourceType)
+            !result.isViolated ||
+            (result.isViolated && e.resourceType === evaluation.resourceType)
           ) {
             results.pop();
           }
         }
       }
-      if (evaluation.or && isPassing) {
+      if (isViolated && evaluation.or) {
         for (const e of evaluation.or) {
           this.evaluate(e, target, results, current);
         }
       }
     }
-    return {results, isPassing};
+    return {results, isViolated};
   }
 
   getExpectedValue(

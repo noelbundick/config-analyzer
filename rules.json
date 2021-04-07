@@ -10,26 +10,7 @@
     "description": "Finds Event Hubs with a network rules set having one or more IP or virtual network rules but the default action is not deny",
     "type": "ARM",
     "evaluation": {
-      "resourceType": "Microsoft.EventHub/namespaces/networkRuleSets",
-      "path": [
-        "properties",
-        "ipRules",
-        "length"
-      ],
-      "operator": "!=",
-      "value": 0,
-      "and": [
-        {
-          "resourceType": "Microsoft.EventHub/namespaces/networkRuleSets",
-          "path": [
-            "properties",
-            "virtualNetworkRules",
-            "length"
-          ],
-          "operator": "!=",
-          "value": 0
-        }
-      ]
+      "jmespath": "type == `Microsoft.EventHub/namespaces/networkRuleSets` && properties.defaultAction == `Deny` && length(properties.ipRules) == 0 && length(properties.virtualNetworkRules) == 0"
     }
   },
   {
@@ -37,24 +18,11 @@
     "description": "Finds Storage Accounts with a Private Endpoint configured but the public endpoint is still enabled",
     "type": "ARM",
     "evaluation": {
-      "resourceType": "Microsoft.Storage/storageAccounts",
-      "path": [
-        "properties",
-        "networkAcls",
-        "defaultAction"
-      ],
-      "operator": "!=",
-      "value": "Allow",
+      "jmespath": "type == `Microsoft.Storage/storageAccounts` && properties.networkAcls.defaultAction == `Allow`",
       "and": [
         {
-          "resourceType": "Microsoft.Network/privateEndpoints",
-          "path": [
-            "dependsOn"
-          ],
-          "operator": "notIn",
-          "parentPath": [
-            "id"
-          ]
+          "resourceType": "Microsoft.Storage/storageAccounts/privateEndpointConnections",
+          "jmespath": "type == `Microsoft.Storage/storageAccounts/privateEndpointConnections` && starts_with(name, $${parentName}/')"
         }
       ]
     }
