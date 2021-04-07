@@ -15,7 +15,7 @@ export interface BaseRule<T> {
   name: string;
   description: string;
   type: RuleType;
-  documentationLink?: string;
+  recommendation?: string;
   execute?: (target: T) => Promise<ScanResult>;
 }
 
@@ -70,20 +70,20 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
   name: string;
   description: string;
   query: string;
-  documentationLink?: string;
+  recommendation?: string;
 
   constructor(rule: {
     type: RuleType.ResourceGraph;
     name: string;
     description: string;
     query: string;
-    documentationLink?: string;
+    recommendation?: string;
   }) {
     this.type = rule.type;
     this.name = rule.name;
     this.description = rule.description;
     this.query = rule.query;
-    this.documentationLink = rule.documentationLink;
+    this.recommendation = rule.recommendation;
   }
 
   async execute(target: ResourceGraphTarget) {
@@ -152,8 +152,8 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
       total: response.totalRecords,
       resourceIds,
     };
-    if (this.documentationLink) {
-      scanResult.documentationLink = this.documentationLink;
+    if (this.recommendation) {
+      scanResult.recommendation = this.recommendation;
     }
     return scanResult;
   }

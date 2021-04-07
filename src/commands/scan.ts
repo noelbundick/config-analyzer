@@ -72,10 +72,10 @@ export default class Scan extends Command {
     this.log(result.ruleName, {bold: true, indent: 4});
     if (result.total) {
       this.log(`❌  ${result.description}`, {color: 'grey', indent: 6});
-      if (result.documentationLink) {
+      if (result.recommendation) {
         const messages = [
           {message: 'How to Fix: ', options: {indent: 10}},
-          {message: result.documentationLink, options: {color: 'cyan'}},
+          {message: result.recommendation, options: {color: 'cyan'}},
         ];
         this.logSameLine(messages);
       }

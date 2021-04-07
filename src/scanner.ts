@@ -13,7 +13,7 @@ import * as path from 'path';
 export interface ScanResult {
   ruleName: string;
   description: string;
-  documentationLink?: string;
+  recommendation?: string;
   total: number;
   resourceIds: string[];
 }
