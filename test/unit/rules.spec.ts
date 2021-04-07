@@ -42,14 +42,14 @@ describe('Resource Graph Rule', () => {
       name: 'test-rule',
       query: 'mock query',
       description: 'Intentional bad query',
-      documentationLink: 'testLink',
+      recommendation: 'testLink',
       type: RuleType.ResourceGraph,
     });
     const scanResult = rule.toScanResult(mockResourcesResponse());
     expect(scanResult).to.deep.equal({
       ruleName: rule.name,
       description: rule.description,
-      documentationLink: rule.documentationLink,
+      recommendation: rule.recommendation,
       total: 1,
       resourceIds: ['mockResourceId'],
     });

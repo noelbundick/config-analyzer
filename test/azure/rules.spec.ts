@@ -17,7 +17,7 @@ describe('Resource Graph Rule', function () {
       description: 'Intentional bad query',
       query: "Resources | where type =~ 'Microsoft.Compute/virtualMachines2'",
       type: RuleType.ResourceGraph,
-      documentationLink: 'someLink',
+      recommendation: 'someLink',
     });
     const target: ResourceGraphTarget = {
       type: RuleType.ResourceGraph,
@@ -28,7 +28,7 @@ describe('Resource Graph Rule', function () {
     expect(result).to.deep.equal({
       ruleName: rule.name,
       description: rule.description,
-      documentationLink: rule.documentationLink,
+      recommendation: rule.recommendation,
       total: 0,
       resourceIds: [],
     });
