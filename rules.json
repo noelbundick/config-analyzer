@@ -21,7 +21,6 @@
       "jmespath": "type == `Microsoft.Storage/storageAccounts` && properties.networkAcls.defaultAction == `Allow`",
       "and": [
         {
-          "resourceType": "Microsoft.Storage/storageAccounts/privateEndpointConnections",
           "jmespath": "type == `Microsoft.Storage/storageAccounts/privateEndpointConnections` && starts_with(name, $${parentName}/')"
         }
       ]
