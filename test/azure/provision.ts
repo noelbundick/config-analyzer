@@ -77,5 +77,6 @@ async function main() {
 }
 
 if (require.main === module) {
+  //TODO: console.log() info re: resourceGroup/etc.
   main().then();
 }
