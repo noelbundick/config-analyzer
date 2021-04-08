@@ -2,10 +2,10 @@ import {
   ResourceGraphRule,
   ResourceGraphTarget,
   Rule,
-  DummyTarget,
-  DummyRule,
   Target,
   RuleType,
+  ARMTemplateRule,
+  ARMTarget,
 } from './rules';
 import {promises as fsPromises} from 'fs';
 import * as path from 'path';
@@ -39,9 +39,9 @@ export class Scanner {
         case RuleType.ResourceGraph:
           r = new ResourceGraphRule(r);
           return r.execute(target as ResourceGraphTarget);
-        case RuleType.Dummy:
-          r = new DummyRule(r);
-          return r.execute(target as DummyTarget);
+        case RuleType.ARM:
+          r = new ARMTemplateRule(r);
+          return r.execute(target as ARMTarget);
       }
     });
   }

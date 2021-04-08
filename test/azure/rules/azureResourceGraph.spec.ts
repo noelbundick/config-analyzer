@@ -1,11 +1,11 @@
-import {assert, expect} from 'chai';
+import {expect} from 'chai';
+
 import {
   ResourceGraphRule,
   ResourceGraphTarget,
   RuleType,
-} from '../../src/rules';
-import {resourceGroup, resourceGroup2, subscriptionId} from '.';
-import {DefaultAzureCredential} from '@azure/identity';
+} from '../../../src/rules';
+import {credential, resourceGroup, resourceGroup2, subscriptionId} from '..';
 
 describe('Resource Graph Rule', function () {
   this.slow(6000);
@@ -21,18 +21,18 @@ describe('Resource Graph Rule', function () {
     const target: ResourceGraphTarget = {
       type: RuleType.ResourceGraph,
       subscriptionIds: [subscriptionId],
-      credential: new DefaultAzureCredential(),
+      credential,
     };
     const result = await rule.execute(target);
-    assert.equal(rule.name, result.ruleName);
-    assert.equal(rule.description, result.description);
-    assert.containsAllKeys(result, [
+    expect(result.ruleName).to.equal(rule.name);
+    expect(result.description).to.equal(rule.description);
+    expect(result).to.contain.all.keys([
       'ruleName',
       'description',
       'total',
       'resourceIds',
     ]);
-    assert.equal(result.total, 0);
+    expect(result.total).to.equal(0);
   });
   it('should return any non existing resource groups in a subscription', async () => {
     const nonExistingGroup1 = `i-should-exist-${Date.now()}-1`;
@@ -46,7 +46,7 @@ describe('Resource Graph Rule', function () {
     const target: ResourceGraphTarget = {
       type: RuleType.ResourceGraph,
       subscriptionIds: [subscriptionId],
-      credential: new DefaultAzureCredential(),
+      credential,
       groupNames,
     };
     const nonExistingGroups = await ResourceGraphRule.getNonExistingResourceGroups(

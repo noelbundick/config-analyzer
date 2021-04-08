@@ -1,5 +1,10 @@
 import {test, expect} from '@oclif/test';
-import {resourceGroup, resourceGroup2, subscriptionId} from '..';
+import {
+  blobStorageAccountName,
+  resourceGroup,
+  resourceGroup2,
+  subscriptionId,
+} from '..';
 import {RuleType} from '../../../src/rules';
 import {Scanner} from '../../../src/scanner';
 
@@ -79,6 +84,16 @@ describe('Scan Integration Tests', function () {
       async ({stderr}) => {
         expect(stderr).to.contain(nonExistingGroup);
         expect(stderr).to.not.contain(resourceGroup);
+      }
+    );
+  test
+    .stdout()
+    .command(['scan', '-s', subscriptionId, '-g', resourceGroup])
+    .it(
+      'should find storage accounts with a private endpoint configured but the public endpoint is still enabled',
+      async ({stdout}) => {
+        const storageId = `/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.Storage/storageAccounts/${blobStorageAccountName}`;
+        expect(stdout).to.contain(storageId);
       }
     );
 });

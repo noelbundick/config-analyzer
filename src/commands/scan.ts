@@ -1,6 +1,6 @@
 import {Command, flags} from '@oclif/command';
 import {Scanner, ScanResult} from '../scanner';
-import {Target, RuleType, ResourceGraphRule} from '../rules';
+import {Target, RuleType, ResourceGraphRule, ARMTemplateRule} from '../rules';
 import {format, LogOptions} from '../commandHelper';
 import cli from 'cli-ux';
 import chalk = require('chalk');
@@ -39,9 +39,11 @@ export default class Scan extends Command {
       multiple: true,
       dependsOn: ['scope'],
     }),
-    dummy: flags.boolean({
-      char: 'd',
-      description: 'runs dummy rules to mock multi rule system',
+    // update description
+    template: flags.boolean({
+      char: 't',
+      description: 'runs rules against an exported ARM template',
+      dependsOn: ['scope'],
     }),
     file: flags.string({
       char: 'f',
@@ -111,7 +113,27 @@ export default class Scan extends Command {
 
     if (flags.verbose) this.isVerbose = true;
     if (flags.debug) this.isDebugMode = true;
-    if (flags.scope) {
+    if (flags.template) {
+      if (flags.scope.length > 1) {
+        this.error('Please provide only one subscription');
+      }
+      if (!flags.group || flags.group.length > 1) {
+        this.error('Please provide one resource group to scan');
+      }
+      cli.action.start('Fetching template. This may take a few moments');
+      const template = await ARMTemplateRule.getTemplate(
+        flags.scope[0],
+        flags.group[0],
+        new DefaultAzureCredential()
+      );
+      cli.action.stop();
+      target = {
+        type: RuleType.ARM,
+        subscriptionId: flags.scope[0],
+        groupName: flags.group[0],
+        template: template._response.parsedBody.template,
+      };
+    } else if (flags.scope) {
       if (flags.scope.length > 1 && flags.group) {
         this.error(
           'Only one subscription can be scanned when using Flag --group'
@@ -133,12 +155,9 @@ export default class Scan extends Command {
           );
         }
       }
-    } else if (flags.dummy) {
-      target = {type: RuleType.Dummy, context: {}};
     } else {
       this.error('Command scan expects a Flag');
     }
-
     await scanner.loadRulesFromFile(flags.file);
     cli.action.start('Scanning');
     const results = await scanner.scan(target);

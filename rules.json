@@ -1,20 +1,29 @@
 [
   {
-    "name": "Mock Rule - Get VMs",
-    "description": "Get all virtual Machines in a subscription",
+    "name": "accidental-public-storage",
+    "description": "Finds Storage Accounts with a Private Endpoint configured but the public endpoint is still enabled",
     "type": "ResourceGraph",
-    "query": "Resources | where type =~ 'Microsoft.Compute/virtualMachines'"
+    "query": "Resources | where type=~ 'Microsoft.Storage/storageAccounts' and isnotempty(properties.privateEndpointConnections[0]) and properties.networkAcls.defaultAction=~ 'Allow'"
   },
   {
-    "name": "Mock Rule - Get Storage Accounts",
-    "description": "Get all storage accounts in a subscription",
-    "type": "ResourceGraph",
-    "query": "Resources | where type =~ 'Microsoft.Storage/storageAccounts'"
+    "name": "event-hubs-default-action-deny",
+    "description": "Finds Event Hubs with a network rules set having one or more IP or virtual network rules but the default action is not deny",
+    "type": "ARM",
+    "evaluation": {
+      "jmespath": "type == `Microsoft.EventHub/namespaces/networkRuleSets` && properties.defaultAction == `Deny` && length(properties.ipRules) == 0 && length(properties.virtualNetworkRules) == 0"
+    }
   },
   {
-    "name": "Dummy Mock Rule",
-    "description": "Mocks a multiple rule system",
-    "type": "Dummy",
-    "context": {"message": "I don't do anything"}
+    "name": "accidental-public-storage",
+    "description": "Finds Storage Accounts with a Private Endpoint configured but the public endpoint is still enabled",
+    "type": "ARM",
+    "evaluation": {
+      "jmespath": "type == `Microsoft.Storage/storageAccounts` && properties.networkAcls.defaultAction == `Allow`",
+      "and": [
+        {
+          "jmespath": "type == `Microsoft.Storage/storageAccounts/privateEndpointConnections` && starts_with(name, $${parentName}/')"
+        }
+      ]
+    }
   }
 ]

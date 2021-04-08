@@ -1,62 +1,14 @@
 import {ResourceGraphModels} from '@azure/arm-resourcegraph';
-import {DefaultAzureCredential} from '@azure/identity';
-import {AzureClient} from './azure';
-import {ScanResult} from './scanner';
-
-export type Rule = ResourceGraphRule | DummyRule;
-export type Target = ResourceGraphTarget | DummyTarget;
-
-export enum RuleType {
-  ResourceGraph = 'ResourceGraph',
-  Dummy = 'Dummy',
-}
-
-export interface BaseRule<T> {
-  name: string;
-  description: string;
-  type: RuleType;
-  execute?: (target: T) => Promise<ScanResult>;
-}
+import {TokenCredential} from '@azure/identity';
+import {BaseRule, RuleType} from '.';
+import {AzureClient} from '../azure';
+import {ScanResult} from '../scanner';
 
 export interface ResourceGraphTarget {
   type: RuleType.ResourceGraph;
   subscriptionIds: string[];
-  credential: DefaultAzureCredential;
+  credential: TokenCredential;
   groupNames?: string[];
-}
-
-export interface DummyTarget {
-  type: RuleType.Dummy;
-  context: object;
-}
-
-export class DummyRule implements BaseRule<DummyTarget> {
-  type: RuleType.Dummy;
-  name: string;
-  description: string;
-  context: object;
-
-  constructor(rule: {
-    type: RuleType.Dummy;
-    name: string;
-    description: string;
-    context: object;
-  }) {
-    this.type = rule.type;
-    this.name = rule.name;
-    this.description = rule.description;
-    this.context = rule.context;
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  execute(_: DummyTarget) {
-    return Promise.resolve({
-      ruleName: this.name,
-      description: this.description,
-      total: 0,
-      resourceIds: [],
-    }) as Promise<ScanResult>;
-  }
 }
 
 interface ResourceGraphQueryResponseColumn {

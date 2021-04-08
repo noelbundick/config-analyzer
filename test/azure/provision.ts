@@ -6,6 +6,8 @@ import {
   resourceGroup2,
   subscriptionId,
   testRegion,
+  keyVaultId,
+  blobStorageAccountName,
 } from '.';
 
 export async function provisionEnvironment() {
@@ -33,6 +35,17 @@ export async function provisionEnvironment() {
           },
           location: {
             value: testRegion,
+          },
+          blobStorageAccountName: {
+            value: blobStorageAccountName,
+          },
+          adminPasswordOrKey: {
+            reference: {
+              keyVault: {
+                id: keyVaultId,
+              },
+              secretName: 'DefaultAdminPasswordSecret',
+            },
           },
         },
       },
@@ -64,5 +77,6 @@ async function main() {
 }
 
 if (require.main === module) {
+  //TODO: console.log() info re: resourceGroup/etc.
   main().then();
 }
