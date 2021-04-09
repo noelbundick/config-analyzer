@@ -3,7 +3,6 @@ import {Scanner, ScanResult} from '../scanner';
 import {Target, RuleType, ResourceGraphRule, ARMTemplateRule} from '../rules';
 import {format, LogOptions} from '../commandHelper';
 import cli from 'cli-ux';
-import chalk = require('chalk');
 import {DefaultAzureCredential} from '@azure/identity';
 
 export default class Scan extends Command {
@@ -39,7 +38,6 @@ export default class Scan extends Command {
       multiple: true,
       dependsOn: ['scope'],
     }),
-    // update description
     template: flags.boolean({
       char: 't',
       description: 'runs rules against an exported ARM template',
