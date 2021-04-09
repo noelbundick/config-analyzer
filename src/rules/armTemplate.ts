@@ -32,11 +32,11 @@ export interface ARMTarget {
 // All evaluations contain a JMESPath query that operate on ARM resources
 type BaseEvaluation = {
   query: string;
-  request?: {
-    type: string;
-    apiVersion: string;
-    query: string;
-  };
+  // request?: {
+  //   type: string;
+  //   apiVersion: string;
+  //   query: string;
+  // };
 };
 
 // Some evaluations may check for additional conditions
@@ -44,16 +44,41 @@ type AndEvaluation = BaseEvaluation & {
   and: Array<Evaluation>;
 };
 
+type RequestEvaluation = BaseEvaluation & {
+  request: {
+    type: string;
+    apiVersion: string;
+    query: string;
+  };
+};
+
 function isAndEvaluation(evaluation: Evaluation): evaluation is AndEvaluation {
   return (evaluation as AndEvaluation).and !== undefined;
 }
 
-function isRequestEvaluation(evaluation: Evaluation) {
-  return evaluation.request !== undefined;
+function isRequestEvaluation(
+  evaluation: Evaluation
+): evaluation is RequestEvaluation {
+  return (evaluation as RequestEvaluation).request !== undefined;
+}
+
+function mapAsync<T1, T2>(
+  array: T1[],
+  callback: (value: T1, index: number, array: T1[]) => Promise<T2>
+): Promise<T2[]> {
+  return Promise.all(array.map(callback));
+}
+
+async function filterAsync<T>(
+  array: T[],
+  callback: (value: T, index: number, array: T[]) => Promise<boolean>
+): Promise<T[]> {
+  const filterMap = await mapAsync(array, callback);
+  return array.filter((_, index) => filterMap[index]);
 }
 
 // Evaluations may be standalone or composite
-type Evaluation = BaseEvaluation | AndEvaluation;
+type Evaluation = BaseEvaluation | AndEvaluation | RequestEvaluation;
 
 export class ARMTemplateRule implements BaseRule<ARMTarget> {
   type: RuleType.ARM;
@@ -88,39 +113,16 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
     });
   }
 
-  execute(target: ARMTarget) {
+  async execute(target: ARMTarget) {
     let results = this.evaluate(this.evaluation, target.template);
-    if (results.length > 0 && this.evaluation.request) {
-      results = results.filter(async resource => {
-        // const response = await this.sendRequest(this.evaluation, resource);
-        const parsedBody = {
-          properties: {
-            APPINSIGHTS_INSTRUMENTATIONKEY:
-              '0af8cd9a-379a-41d5-877b-f7b890a2ade7',
-            APPLICATIONINSIGHTS_CONNECTION_STRING:
-              'InstrumentationKey=0af8cd9a-379a-41d5-877b-f7b890a2ade7;IngestionEndpoint=https://centralus-0.in.applicationinsights.azure.com/',
-            AzureWebJobsStorage:
-              'DefaultEndpointsProtocol=https;AccountName=joshsecurestorage;AccountKey=5ldOTqa8CF/W/poxHuV1RwmHLegLevhmVthmzNku7RIooTsLqgEPfWboWsFAHrSfhiXYP8RndOzwL8C0CX1UDQ==;EndpointSuffix=core.windows.net',
-            FUNCTIONS_EXTENSION_VERSION: '~3',
-            FUNCTIONS_WORKER_RUNTIME: 'dotnet',
-            SERVICEBUS_CONNECTION:
-              'Endpoint=sb://joshservicebus.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=Uehbb2/xaX2mZjsiCtUSvNOI/PYLuO7jNHLzC0i+Xmo=',
-            WEBSITE_CONTENTAZUREFILECONNECTIONSTRING:
-              'DefaultEndpointsProtocol=https;AccountName=joshsecurestorage;AccountKey=5ldOTqa8CF/W/poxHuV1RwmHLegLevhmVthmzNku7RIooTsLqgEPfWboWsFAHrSfhiXYP8RndOzwL8C0CX1UDQ==;EndpointSuffix=core.windows.net',
-            WEBSITE_CONTENTOVERVNET: '1',
-            WEBSITE_CONTENTSHARE: 'files',
-            WEBSITE_DNS_SERVER: '168.63.129.16',
-            WEBSITE_VNET_ROUTE_ALL: '1',
-          },
-        };
-        const query = this.evaluation.request?.query || '';
-        const isFound = JMESPath.search(parsedBody, query);
-        console.log('MY RESULTS: ', results);
-        // return JMESPath.search(response.parsedBody, query);
-        return isFound ? resource : false;
+    const evaluation = this.evaluation;
+    if (results.length > 0 && isRequestEvaluation(evaluation)) {
+      results = await filterAsync(results, async resource => {
+        const query = evaluation.request.query;
+        const response = await this.sendRequest(evaluation, resource);
+        return JMESPath.search(response, query);
       });
     }
-    console.log('Results', results);
     const resourceIds = results.map(r => this.getResourceId(r, target));
     return Promise.resolve(this.toScanResult(resourceIds));
   }
@@ -165,19 +167,10 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
       );
     }
 
-    // if (resources.length > 0 && isRequestEvaluation(evaluation)) {
-    //   return resources.filter(async resource => {
-    //     const response = await this.sendRequest(evaluation, resource);
-    //     console.log(response);
-    //     const query = this.render(evaluation.request.query);
-    //     return JMESPath.search(response.parsedBody, query);
-    //   });
-    // }
-
     return resources;
   }
 
-  async sendRequest(evaluation: Evaluation, resource: ARMResource) {
+  async sendRequest(evaluation: RequestEvaluation, resource: ARMResource) {
     const subscriptionId = '6c1f4f3b-f65f-4667-8f9e-b9c48e09cd6b';
     const resourceGroup = 'josh-function-tutorial';
     const requestType = evaluation.request?.type || '';
@@ -199,7 +192,7 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
         Host: 'management.azure.com',
       },
     };
-    return Promise.resolve(client.sendRequest(options));
+    return await client.sendRequest(options);
   }
 
   toResourceIdARMFunction(resource: ARMResource) {
