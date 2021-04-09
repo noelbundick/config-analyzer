@@ -1,10 +1,16 @@
 import {expect} from 'chai';
 import {ARMTemplateRule, RuleType} from '../../../src/rules';
 import {credential, resourceGroup, subscriptionId} from '..';
+import {ScanResult} from '../../../src/scanner';
 
-describe('ARM Template Rule', function () {
+describe('ARM Template Rule', async function () {
   this.slow(15000);
   this.timeout(20000);
+  const target = await ARMTemplateRule.getTarget(
+    subscriptionId,
+    resourceGroup,
+    credential
+  );
   it('can get an execute an accidental storage rule scoped to a Resource Group', async () => {
     const rule = new ARMTemplateRule({
       name: 'accidental-public-storage',
@@ -22,17 +28,11 @@ describe('ARM Template Rule', function () {
         ],
       },
     });
-    const template = await ARMTemplateRule.getTemplate(
-      subscriptionId,
-      resourceGroup,
-      credential
-    );
-    const target = {
-      type: 'ARM' as RuleType.ARM,
-      subscriptionId: subscriptionId,
-      groupName: resourceGroup,
-      template: template._response.parsedBody.template,
-    };
+    // const target = await ARMTemplateRule.getTarget(
+    //   subscriptionId,
+    //   resourceGroup,
+    //   credential
+    // );
     // TODO: clean this up to not have hard coded values
     // this can happen when we refactor the test ARM Temlplate
     const storageAccountName = 'azabhcf24jbcuxwo';
@@ -46,5 +46,42 @@ describe('ARM Template Rule', function () {
     };
     const result = await rule.execute(target);
     expect(result).to.deep.equal(expectedResult);
+  });
+  it('tests the RequestEvaluation', async () => {
+    const target = await ARMTemplateRule.getTarget(
+      subscriptionId,
+      'josh-function-tutorial',
+      credential
+    );
+    const rule = new ARMTemplateRule({
+      name: 'function-app-vnet-integration-misconfiguration',
+      description: '',
+      type: 'ARM' as RuleType.ARM,
+      recommendation:
+        'https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#event-hubs-not-locked-down-1',
+      evaluation: {
+        query: 'type == `Microsoft.Web/sites`',
+        request: {
+          operation: 'config/appsettings/list',
+          query:
+            'properties.WEBSITE_DNS_SERVER != `168.63.129.16` && properties.WEBSITE_VNET_ROUTE_ALL != 1',
+        },
+        and: [
+          {
+            query:
+              'type == `Microsoft.Web/sites/virtualNetworkConnections` && starts_with(name, `{{parent.name}}`/)',
+          },
+        ],
+      },
+    });
+    const expectedResult: ScanResult = {
+      ruleName: rule.name,
+      description: rule.description,
+      recommendation: rule.recommendation,
+      total: 1,
+      resourceIds: [],
+    };
+    const resultShouldPass = await rule.execute(target);
+    expect(resultShouldPass).to.deep.equal(expectedResult, 'failing');
   });
 });
