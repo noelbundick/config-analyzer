@@ -19,6 +19,7 @@ Simple example that finds all Storage Accounts with the storage firewall disable
   "name": "storage-public",
   "description": "Storage Accounts with Internet access",
   "type": "ARM",
+  "recommendation": "optional link to docs on how to fix the issue"
   "evaluation": {
     "query": "type == `Microsoft.Storage/storageAccounts` && properties.networkAcls.defaultAction == `Allow`"
   }
@@ -32,6 +33,7 @@ Find all Storage Accounts that have Private Endpoints enabled, but have not disa
   "name": "storage-unintendedPublic",
   "description": "Storage Accounts that are configured for Private Endpoint but still allow Internet traffic",
   "type": "ARM",
+  "recommendation": "optional link to docs on how to fix the issue",
   "evaluation": {
     "query": "type == `Microsoft.Storage/storageAccounts` && properties.networkAcls.defaultAction == `Allow`",
     "and": [
