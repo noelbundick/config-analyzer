@@ -50,17 +50,20 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
   name: string;
   description: string;
   evaluation: Evaluation;
+  recommendation?: string;
 
   constructor(rule: {
     type: RuleType.ARM;
     name: string;
     description: string;
     evaluation: Evaluation;
+    recommendation?: string;
   }) {
     this.type = rule.type;
     this.name = rule.name;
     this.description = rule.description;
     this.evaluation = rule.evaluation;
+    this.recommendation = rule.recommendation;
   }
 
   static async getTemplate(
@@ -85,12 +88,15 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
   }
 
   toScanResult(resourceIds: string[]): ScanResult {
-    const scanResult = {
+    const scanResult: ScanResult = {
       ruleName: this.name,
       description: this.description,
       total: resourceIds.length,
       resourceIds: resourceIds,
     };
+    if (this.recommendation) {
+      scanResult.recommendation = this.recommendation;
+    }
     return scanResult;
   }
 

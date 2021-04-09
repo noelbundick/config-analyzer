@@ -3,7 +3,6 @@ import {Scanner, ScanResult} from '../scanner';
 import {Target, RuleType, ResourceGraphRule, ARMTemplateRule} from '../rules';
 import {format, LogOptions} from '../commandHelper';
 import cli from 'cli-ux';
-import chalk = require('chalk');
 import {DefaultAzureCredential} from '@azure/identity';
 
 export default class Scan extends Command {
@@ -39,7 +38,6 @@ export default class Scan extends Command {
       multiple: true,
       dependsOn: ['scope'],
     }),
-    // update description
     template: flags.boolean({
       char: 't',
       description: 'runs rules against an exported ARM template',
@@ -63,18 +61,34 @@ export default class Scan extends Command {
     super.log(formattedMessage);
   }
 
+  public logSameLine(messages: {message: string; options?: LogOptions}[]) {
+    const formattedMessages = messages
+      .map(l => format(l.message, l.options))
+      .join('');
+    super.log(formattedMessages);
+  }
+
   private printResult(result: ScanResult) {
     this.log(result.ruleName, {bold: true, indent: 4});
     if (result.total) {
-      this.log(`❌ ${result.description}`, {color: 'grey', indent: 6});
-      this.log(`Resources (${result.total}):`, {indent: 6});
+      this.log(`❌  ${result.description}`, {color: 'grey', indent: 6});
+      if (result.recommendation) {
+        const messages = [
+          {message: 'How to Fix: ', options: {indent: 10}},
+          {message: result.recommendation, options: {color: 'cyan'}},
+        ];
+        this.logSameLine(messages);
+      }
+      this.log(`Resources (${result.total}):`, {indent: 10});
       for (const id of result.resourceIds) {
-        this.log(id, {indent: 8});
+        this.log(id, {indent: 14});
       }
     } else {
-      this.log(`${chalk.green('✓')} ${chalk.grey(result.description)}`, {
-        indent: 6,
-      });
+      const messages = [
+        {message: '✓  ', options: {color: 'green', indent: 6}},
+        {message: result.description, options: {color: 'grey'}},
+      ];
+      this.logSameLine(messages);
     }
     this.log('');
   }

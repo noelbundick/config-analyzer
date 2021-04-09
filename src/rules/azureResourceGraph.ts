@@ -21,17 +21,20 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
   name: string;
   description: string;
   query: string;
+  recommendation?: string;
 
   constructor(rule: {
     type: RuleType.ResourceGraph;
     name: string;
     description: string;
     query: string;
+    recommendation?: string;
   }) {
     this.type = rule.type;
     this.name = rule.name;
     this.description = rule.description;
     this.query = rule.query;
+    this.recommendation = rule.recommendation;
   }
 
   async execute(target: ResourceGraphTarget) {
@@ -94,12 +97,15 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
       throw new Error('Id column was not returned from Azure Resource Graph');
     }
     const resourceIds = rows.map(r => r[idIndex]);
-    const scanResult = {
+    const scanResult: ScanResult = {
       ruleName: this.name,
       description: this.description,
       total: response.totalRecords,
       resourceIds,
     };
+    if (this.recommendation) {
+      scanResult.recommendation = this.recommendation;
+    }
     return scanResult;
   }
 }

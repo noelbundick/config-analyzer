@@ -9,13 +9,13 @@ Rules are authored in JSON. Every rule contains metadata (`name`, `description`,
     "name": "rule name",
     "description": "short description of the rule",
     "type": "type of rule",
+    "recommendation": "optional link on how to fix the issue"
   },
 ```
 
 ### Rule Types
 
 - `type`: 'ResourceGraph'
-
 ---
 
 ### Resource Graph Rule

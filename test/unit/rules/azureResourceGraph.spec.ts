@@ -38,6 +38,23 @@ describe('Resource Graph Rule', () => {
       resourceIds: ['mockResourceId'],
     });
   });
+  it('can produce a scan result wtih a documentation link', () => {
+    const rule = new ResourceGraphRule({
+      name: 'test-rule',
+      query: 'mock query',
+      description: 'Intentional bad query',
+      recommendation: 'testLink',
+      type: RuleType.ResourceGraph,
+    });
+    const scanResult = rule.toScanResult(mockResourcesResponse());
+    expect(scanResult).to.deep.equal({
+      ruleName: rule.name,
+      description: rule.description,
+      recommendation: rule.recommendation,
+      total: 1,
+      resourceIds: ['mockResourceId'],
+    });
+  });
   it("should throw an errow if the 'id' column is not returned from Resource Graph", () => {
     const resourcesResponse = mockResourcesResponse();
     resourcesResponse.data.columns = [];

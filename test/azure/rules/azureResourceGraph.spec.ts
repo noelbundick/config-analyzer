@@ -1,5 +1,4 @@
 import {expect} from 'chai';
-
 import {
   ResourceGraphRule,
   ResourceGraphTarget,
@@ -17,6 +16,7 @@ describe('Resource Graph Rule', function () {
       description: 'Intentional bad query',
       query: "Resources | where type =~ 'Microsoft.Compute/virtualMachines2'",
       type: RuleType.ResourceGraph,
+      recommendation: 'someLink',
     });
     const target: ResourceGraphTarget = {
       type: RuleType.ResourceGraph,
@@ -24,15 +24,13 @@ describe('Resource Graph Rule', function () {
       credential,
     };
     const result = await rule.execute(target);
-    expect(result.ruleName).to.equal(rule.name);
-    expect(result.description).to.equal(rule.description);
-    expect(result).to.contain.all.keys([
-      'ruleName',
-      'description',
-      'total',
-      'resourceIds',
-    ]);
-    expect(result.total).to.equal(0);
+    expect(result).to.deep.equal({
+      ruleName: rule.name,
+      description: rule.description,
+      recommendation: rule.recommendation,
+      total: 0,
+      resourceIds: [],
+    });
   });
   it('should return any non existing resource groups in a subscription', async () => {
     const nonExistingGroup1 = `i-should-exist-${Date.now()}-1`;
