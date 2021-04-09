@@ -6,6 +6,7 @@ import {environment, IntegrationTestModes} from '../constants';
 export const testRegion = 'westus2';
 export const credential = new DefaultAzureCredential();
 export const credentialAdapter = new AzureIdentityCredentialAdapter(credential);
+export const blobStorageAccountName = 'azabhcf24jbcuxwo';
 
 const integrationTestMode = env
   .get(environment.runIntegrationTests)
@@ -31,4 +32,9 @@ export const resourceGroup = env
 export const resourceGroup2 = env
   .get(environment.resourceGroup2)
   .default(defaultResourceGroup + '-2')
+  .asString();
+
+export const keyVaultId = env
+  .get(environment.keyValutId)
+  .default('')
   .asString();

@@ -1,7 +1,8 @@
-import {expect} from 'chai';
-import {ResourceGraphRule, RuleType} from '../../src/rules';
 import {ResourceGraphModels} from '@azure/arm-resourcegraph';
 import {HttpHeadersLike, WebResourceLike} from '@azure/ms-rest-js';
+import {expect} from 'chai';
+
+import {ResourceGraphRule, RuleType} from '../../../src/rules';
 
 describe('Resource Graph Rule', () => {
   const mockResourcesResponse = (): ResourceGraphModels.ResourcesResponse => {

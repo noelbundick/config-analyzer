@@ -3,9 +3,8 @@ import {
   ResourceGraphRule,
   ResourceGraphTarget,
   RuleType,
-} from '../../src/rules';
-import {resourceGroup, resourceGroup2, subscriptionId} from '.';
-import {DefaultAzureCredential} from '@azure/identity';
+} from '../../../src/rules';
+import {credential, resourceGroup, resourceGroup2, subscriptionId} from '..';
 
 describe('Resource Graph Rule', function () {
   this.slow(6000);
@@ -22,7 +21,7 @@ describe('Resource Graph Rule', function () {
     const target: ResourceGraphTarget = {
       type: RuleType.ResourceGraph,
       subscriptionIds: [subscriptionId],
-      credential: new DefaultAzureCredential(),
+      credential,
     };
     const result = await rule.execute(target);
     expect(result).to.deep.equal({
@@ -45,7 +44,7 @@ describe('Resource Graph Rule', function () {
     const target: ResourceGraphTarget = {
       type: RuleType.ResourceGraph,
       subscriptionIds: [subscriptionId],
-      credential: new DefaultAzureCredential(),
+      credential,
       groupNames,
     };
     const nonExistingGroups = await ResourceGraphRule.getNonExistingResourceGroups(
