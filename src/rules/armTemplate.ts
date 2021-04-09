@@ -1,12 +1,12 @@
 import {ResourceManagementClient} from '@azure/arm-resources';
-import {DefaultAzureCredential, TokenCredential} from '@azure/identity';
+import {TokenCredential} from '@azure/identity';
+import {HttpMethods} from '@azure/core-http';
 import JMESPath = require('jmespath');
 import Handlebars = require('handlebars');
 
 import {BaseRule, RuleType} from '.';
 import {AzureIdentityCredentialAdapter} from '../azure';
 import {ScanResult} from '../scanner';
-import {HttpMethods} from '@azure/core-rest-pipeline';
 
 export interface ARMTemplate {
   $schema: string;
@@ -27,16 +27,13 @@ export interface ARMTarget {
   template: ARMTemplate;
   subscriptionId: string;
   groupName: string;
+  credential: TokenCredential;
+  client: ResourceManagementClient;
 }
 
 // All evaluations contain a JMESPath query that operate on ARM resources
 type BaseEvaluation = {
   query: string;
-  // request?: {
-  //   type: string;
-  //   apiVersion: string;
-  //   query: string;
-  // };
 };
 
 // Some evaluations may check for additional conditions
@@ -46,8 +43,7 @@ type AndEvaluation = BaseEvaluation & {
 
 type RequestEvaluation = BaseEvaluation & {
   request: {
-    type: string;
-    apiVersion: string;
+    operation: string;
     query: string;
   };
 };
@@ -101,7 +97,7 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
     this.recommendation = rule.recommendation;
   }
 
-  static async getTemplate(
+  static async getTarget(
     subscriptionId: string,
     groupName: string,
     credential: TokenCredential
@@ -110,22 +106,32 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
       new AzureIdentityCredentialAdapter(credential),
       subscriptionId
     );
-    return await client.resourceGroups.exportTemplate(groupName, {
+    const template = await client.resourceGroups.exportTemplate(groupName, {
       resources: ['*'],
       options: 'SkipAllParameterization',
     });
+    return {
+      subscriptionId,
+      groupName,
+      credential,
+      client,
+      template: template._response.parsedBody.template,
+      type: 'ARM' as RuleType.ARM,
+    };
   }
 
   async execute(target: ARMTarget) {
     let results = this.evaluate(this.evaluation, target.template);
     const evaluation = this.evaluation;
+
+    // If we found resources with the queries, filter those down to the ones that meet all the criteria for the request operation
     if (results.length > 0 && isRequestEvaluation(evaluation)) {
       results = await filterAsync(results, async resource => {
         const response = await this.sendRequest(target, resource, evaluation);
-        const query = evaluation.request.query;
-        return JMESPath.search(response, query);
+        return JMESPath.search(response.parsedBody, evaluation.request.query);
       });
     }
+
     const resourceIds = results.map(r => this.getResourceId(r, target));
     return Promise.resolve(this.toScanResult(resourceIds));
   }
@@ -183,16 +189,11 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
     resource: ARMResource,
     evaluation: RequestEvaluation
   ) {
-    const credential = new DefaultAzureCredential();
-    const client = new ResourceManagementClient(
-      new AzureIdentityCredentialAdapter(credential),
-      target.subscriptionId
-    );
-    const token = await credential.getToken(
+    const token = await target.credential.getToken(
       'https://graph.microsoft.com/.default'
     );
     const options = {
-      url: `https://management.azure.com/subscriptions/${target.subscriptionId}/resourceGroups/${target.groupName}/providers/${resource.type}/${resource.name}/${evaluation.request.type}?api-version=${evaluation.request.apiVersion}`,
+      url: `https://management.azure.com/subscriptions/${target.subscriptionId}/resourceGroups/${target.groupName}/providers/${resource.type}/${resource.name}/${evaluation.request.operation}?api-version=${resource.apiVersion}`,
       method: 'POST' as HttpMethods,
       headers: {
         Authorization: `Bearer ${token?.token}`,
@@ -200,7 +201,7 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
         Host: 'management.azure.com',
       },
     };
-    return await client.sendRequest(options);
+    return await target.client.sendRequest(options);
   }
 
   toResourceIdARMFunction(resource: ARMResource) {
