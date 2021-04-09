@@ -118,8 +118,8 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
     const evaluation = this.evaluation;
     if (results.length > 0 && isRequestEvaluation(evaluation)) {
       results = await filterAsync(results, async resource => {
+        const response = await this.sendRequest(target, resource, evaluation);
         const query = evaluation.request.query;
-        const response = await this.sendRequest(evaluation, resource);
         return JMESPath.search(response, query);
       });
     }
@@ -150,12 +150,12 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
 
   evaluate(
     evaluation: Evaluation,
-    target: ARMTemplate,
+    template: ARMTemplate,
     parent?: ARMResource
   ): Array<ARMResource> {
     const query = this.render(evaluation.query, parent);
     const resources = JMESPath.search(
-      target.resources,
+      template.resources,
       query
     ) as Array<ARMResource>;
 
@@ -163,28 +163,30 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
     if (resources.length > 0 && isAndEvaluation(evaluation)) {
       // TODO: make this readable
       return resources.filter(resource =>
-        evaluation.and.every(r => this.evaluate(r, target, resource).length > 0)
+        evaluation.and.every(
+          r => this.evaluate(r, template, resource).length > 0
+        )
       );
     }
 
     return resources;
   }
 
-  async sendRequest(evaluation: RequestEvaluation, resource: ARMResource) {
-    const subscriptionId = '6c1f4f3b-f65f-4667-8f9e-b9c48e09cd6b';
-    const resourceGroup = 'josh-function-tutorial';
-    const requestType = evaluation.request?.type || '';
-    const requestApiVersion = evaluation.request?.apiVersion || '';
+  async sendRequest(
+    target: ARMTarget,
+    resource: ARMResource,
+    evaluation: RequestEvaluation
+  ) {
     const credential = new DefaultAzureCredential();
     const client = new ResourceManagementClient(
       new AzureIdentityCredentialAdapter(credential),
-      subscriptionId
+      target.subscriptionId
     );
     const token = await credential.getToken(
       'https://graph.microsoft.com/.default'
     );
     const options = {
-      url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/${resource.type}/${resource.name}/${requestType}?api-version=${requestApiVersion}`,
+      url: `https://management.azure.com/subscriptions/${target.subscriptionId}/resourceGroups/${target.groupName}/providers/${resource.type}/${resource.name}/${evaluation.request.type}?api-version=${evaluation.request.apiVersion}`,
       method: 'POST' as HttpMethods,
       headers: {
         Authorization: `Bearer ${token?.token}`,
