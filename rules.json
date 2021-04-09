@@ -18,10 +18,28 @@
     "description": "Finds Storage Accounts with a Private Endpoint configured but the public endpoint is still enabled",
     "type": "ARM",
     "evaluation": {
-      "jmespath": "type == `Microsoft.Storage/storageAccounts` && properties.networkAcls.defaultAction == `Allow`",
+      "query": "type == `Microsoft.Storage/storageAccounts` && properties.networkAcls.defaultAction == `Allow`",
       "and": [
         {
-          "jmespath": "type == `Microsoft.Storage/storageAccounts/privateEndpointConnections` && starts_with(name, $${parentName}/')"
+          "query": "type == `Microsoft.Storage/storageAccounts/privateEndpointConnections` && starts_with(name, $${parentName}/')"
+        }
+      ]
+    }
+  },
+  {
+    "name": "function-app",
+    "description": "",
+    "type": "ARM",
+    "evaluation": {
+      "query": "type == `Microsoft.Web/sites`",
+      "request": {
+        "type": "config/appsettings/list",
+        "apiVersion": "2018-02-01",
+        "query": "properties.WEBSITE_DNS_SERVER != `168.63.129.16` && properties.WEBSITE_VNET_ROUTE_ALL != 1"
+      },
+      "and": [
+        {
+          "query": "type == `Microsoft.Web/sites/virtualNetworkConnections` && starts_with(name, $${parentName}/)"
         }
       ]
     }

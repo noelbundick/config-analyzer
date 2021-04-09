@@ -1,11 +1,12 @@
 import {ResourceManagementClient} from '@azure/arm-resources';
-import {TokenCredential} from '@azure/identity';
+import {DefaultAzureCredential, TokenCredential} from '@azure/identity';
 import JMESPath = require('jmespath');
 import Handlebars = require('handlebars');
 
 import {BaseRule, RuleType} from '.';
 import {AzureIdentityCredentialAdapter} from '../azure';
 import {ScanResult} from '../scanner';
+import {HttpMethods} from '@azure/core-rest-pipeline';
 
 export interface ARMTemplate {
   $schema: string;
@@ -31,6 +32,11 @@ export interface ARMTarget {
 // All evaluations contain a JMESPath query that operate on ARM resources
 type BaseEvaluation = {
   query: string;
+  request?: {
+    type: string;
+    apiVersion: string;
+    query: string;
+  };
 };
 
 // Some evaluations may check for additional conditions
@@ -40,6 +46,10 @@ type AndEvaluation = BaseEvaluation & {
 
 function isAndEvaluation(evaluation: Evaluation): evaluation is AndEvaluation {
   return (evaluation as AndEvaluation).and !== undefined;
+}
+
+function isRequestEvaluation(evaluation: Evaluation) {
+  return evaluation.request !== undefined;
 }
 
 // Evaluations may be standalone or composite
@@ -79,7 +89,38 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
   }
 
   execute(target: ARMTarget) {
-    const results = this.evaluate(this.evaluation, target.template);
+    let results = this.evaluate(this.evaluation, target.template);
+    if (results.length > 0 && this.evaluation.request) {
+      results = results.filter(async resource => {
+        // const response = await this.sendRequest(this.evaluation, resource);
+        const parsedBody = {
+          properties: {
+            APPINSIGHTS_INSTRUMENTATIONKEY:
+              '0af8cd9a-379a-41d5-877b-f7b890a2ade7',
+            APPLICATIONINSIGHTS_CONNECTION_STRING:
+              'InstrumentationKey=0af8cd9a-379a-41d5-877b-f7b890a2ade7;IngestionEndpoint=https://centralus-0.in.applicationinsights.azure.com/',
+            AzureWebJobsStorage:
+              'DefaultEndpointsProtocol=https;AccountName=joshsecurestorage;AccountKey=5ldOTqa8CF/W/poxHuV1RwmHLegLevhmVthmzNku7RIooTsLqgEPfWboWsFAHrSfhiXYP8RndOzwL8C0CX1UDQ==;EndpointSuffix=core.windows.net',
+            FUNCTIONS_EXTENSION_VERSION: '~3',
+            FUNCTIONS_WORKER_RUNTIME: 'dotnet',
+            SERVICEBUS_CONNECTION:
+              'Endpoint=sb://joshservicebus.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=Uehbb2/xaX2mZjsiCtUSvNOI/PYLuO7jNHLzC0i+Xmo=',
+            WEBSITE_CONTENTAZUREFILECONNECTIONSTRING:
+              'DefaultEndpointsProtocol=https;AccountName=joshsecurestorage;AccountKey=5ldOTqa8CF/W/poxHuV1RwmHLegLevhmVthmzNku7RIooTsLqgEPfWboWsFAHrSfhiXYP8RndOzwL8C0CX1UDQ==;EndpointSuffix=core.windows.net',
+            WEBSITE_CONTENTOVERVNET: '1',
+            WEBSITE_CONTENTSHARE: 'files',
+            WEBSITE_DNS_SERVER: '168.63.129.16',
+            WEBSITE_VNET_ROUTE_ALL: '1',
+          },
+        };
+        const query = this.evaluation.request?.query || '';
+        const isFound = JMESPath.search(parsedBody, query);
+        console.log('MY RESULTS: ', results);
+        // return JMESPath.search(response.parsedBody, query);
+        return isFound ? resource : false;
+      });
+    }
+    console.log('Results', results);
     const resourceIds = results.map(r => this.getResourceId(r, target));
     return Promise.resolve(this.toScanResult(resourceIds));
   }
@@ -124,7 +165,41 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
       );
     }
 
+    // if (resources.length > 0 && isRequestEvaluation(evaluation)) {
+    //   return resources.filter(async resource => {
+    //     const response = await this.sendRequest(evaluation, resource);
+    //     console.log(response);
+    //     const query = this.render(evaluation.request.query);
+    //     return JMESPath.search(response.parsedBody, query);
+    //   });
+    // }
+
     return resources;
+  }
+
+  async sendRequest(evaluation: Evaluation, resource: ARMResource) {
+    const subscriptionId = '6c1f4f3b-f65f-4667-8f9e-b9c48e09cd6b';
+    const resourceGroup = 'josh-function-tutorial';
+    const requestType = evaluation.request?.type || '';
+    const requestApiVersion = evaluation.request?.apiVersion || '';
+    const credential = new DefaultAzureCredential();
+    const client = new ResourceManagementClient(
+      new AzureIdentityCredentialAdapter(credential),
+      subscriptionId
+    );
+    const token = await credential.getToken(
+      'https://graph.microsoft.com/.default'
+    );
+    const options = {
+      url: `https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/${resource.type}/${resource.name}/${requestType}?api-version=${requestApiVersion}`,
+      method: 'POST' as HttpMethods,
+      headers: {
+        Authorization: `Bearer ${token?.token}`,
+        'Content-Type': 'application/json',
+        Host: 'management.azure.com',
+      },
+    };
+    return Promise.resolve(client.sendRequest(options));
   }
 
   toResourceIdARMFunction(resource: ARMResource) {
