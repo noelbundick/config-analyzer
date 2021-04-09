@@ -13,7 +13,7 @@ describe('ARM Template Rule', function () {
       type: 'ARM' as RuleType.ARM,
       evaluation: {
         query:
-          'type == `Microsoft.Storage/storageAccounts` && properties.networkAcls.defaultAction == `Deny`',
+          'type == `Microsoft.Storage/storageAccounts` && properties.networkAcls.defaultAction == `Allow`',
         and: [
           {
             query:
@@ -44,7 +44,7 @@ describe('ARM Template Rule', function () {
         `subscriptions/${target.subscriptionId}/resourceGroups/${target.groupName}/providers/Microsoft.Storage/storageAccounts/${storageAccountName}`,
       ],
     };
-    const result = rule.execute(target);
+    const result = await rule.execute(target);
     expect(result).to.deep.equal(expectedResult);
   });
 });
