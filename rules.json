@@ -10,7 +10,7 @@
     "name": "accidental-public-storage",
     "description": "Finds Storage Accounts with a Private Endpoint configured but the public endpoint is still enabled",
     "type": "ARM",
-    "recommendation": "https://github.com/noelbundick/config-analyzer/tree/main/docs/built-in-rules",
+    "recommendation": "https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#accidental-public-storage",
     "evaluation": {
       "query": "type == `Microsoft.Storage/storageAccounts` && properties.networkAcls.defaultAction == `Allow`",
       "and": [
@@ -21,19 +21,37 @@
     }
   },
   {
-    "name": "function-app",
+    "name": "event-hubs-not-locked-down-1",
+    "description": "Finds Event Hubs with a network rule set having zero IP and virtual network rules and the defaultAction is Deny.",
+    "type": "ARM",
+    "recommendation": "https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#event-hubs-not-locked-down-1",
+    "evaluation": {
+      "query": "type == `Microsoft.EventHub/namespaces/networkRuleSets` && properties.defaultAction == `Deny` && length(properties.ipRules) == `0` && length(properties.virtualNetworkRules) == `0`"
+    }
+  },
+  {
+    "name": "event-hubs-not-locked-down-2",
+    "description": "Finds Event Hubs with a network rule set having one or more IP and virtual network rules for the namespace but the defaultAction is not set to 'Deny'",
+    "type": "ARM",
+    "recommendation": "https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#event-hubs-not-locked-down-2",
+    "evaluation": {
+      "query": "type == `Microsoft.EventHub/namespaces/networkRuleSets` && properties.defaultAction == `Allow` && (length(properties.ipRules) > `0` || length(properties.virtualNetworkRules) > `0`)"
+    }
+  },
+  {
+    "name": "function-app-vnet-integration-misconfiguration",
     "description": "",
     "type": "ARM",
+    "recommendation": "https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#event-hubs-not-locked-down-1",
     "evaluation": {
       "query": "type == `Microsoft.Web/sites`",
       "request": {
-        "type": "config/appsettings/list",
-        "apiVersion": "2018-02-01",
-        "query": "properties.WEBSITE_DNS_SERVER != `168.63.129.16` && properties.WEBSITE_VNET_ROUTE_ALL != 1"
+        "operation": "config/appsettings/list",
+        "query": "properties.WEBSITE_DNS_SERVER != `168.63.129.16` && properties.WEBSITE_VNET_ROUTE_ALL != `1`"
       },
       "and": [
         {
-          "query": "type == `Microsoft.Web/sites/virtualNetworkConnections` && starts_with(name, `{{parentName}}`/)"
+          "query": "type == `Microsoft.Web/sites/virtualNetworkConnections` && starts_with(name, `{{parent.name}}/`)"
         }
       ]
     }
