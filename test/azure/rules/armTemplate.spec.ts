@@ -1,16 +1,17 @@
 import {expect} from 'chai';
-import {ARMTemplateRule, RuleType} from '../../../src/rules';
-import {credential, resourceGroup, subscriptionId} from '..';
+import {ARMTarget, ARMTemplateRule, RuleType} from '../../../src/rules';
+import {
+  credential,
+  functionResourceGroup,
+  resourceGroup,
+  subscriptionId,
+} from '..';
 import {ScanResult} from '../../../src/scanner';
 
-describe('ARM Template Rule', async function () {
-  this.slow(15000);
-  this.timeout(20000);
-  const target = await ARMTemplateRule.getTarget(
-    subscriptionId,
-    resourceGroup,
-    credential
-  );
+describe('ARM Template Rule', function () {
+  this.slow(60000);
+  this.timeout(300000);
+
   it('can get an execute an accidental storage rule scoped to a Resource Group', async () => {
     const rule = new ARMTemplateRule({
       name: 'accidental-public-storage',
@@ -28,11 +29,11 @@ describe('ARM Template Rule', async function () {
         ],
       },
     });
-    // const target = await ARMTemplateRule.getTarget(
-    //   subscriptionId,
-    //   resourceGroup,
-    //   credential
-    // );
+    const target = await ARMTemplateRule.getTarget(
+      subscriptionId,
+      resourceGroup,
+      credential
+    );
     // TODO: clean this up to not have hard coded values
     // this can happen when we refactor the test ARM Temlplate
     const storageAccountName = 'azabhcf24jbcuxwo';
@@ -47,10 +48,10 @@ describe('ARM Template Rule', async function () {
     const result = await rule.execute(target);
     expect(result).to.deep.equal(expectedResult);
   });
-  it('tests the RequestEvaluation', async () => {
+  it('tests the function app misconfiguration with the RequestEvaluation', async () => {
     const target = await ARMTemplateRule.getTarget(
       subscriptionId,
-      'josh-function-tutorial',
+      functionResourceGroup,
       credential
     );
     const rule = new ARMTemplateRule({
@@ -64,12 +65,12 @@ describe('ARM Template Rule', async function () {
         request: {
           operation: 'config/appsettings/list',
           query:
-            'properties.WEBSITE_DNS_SERVER != `168.63.129.16` && properties.WEBSITE_VNET_ROUTE_ALL != 1',
+            "properties.WEBSITE_DNS_SERVER != '168.63.129.16' || properties.WEBSITE_VNET_ROUTE_ALL != '1'",
         },
         and: [
           {
             query:
-              'type == `Microsoft.Web/sites/virtualNetworkConnections` && starts_with(name, `{{parent.name}}`/)',
+              'type == `Microsoft.Web/sites/virtualNetworkConnections` && starts_with(name, `{{parent.name}}/`)',
           },
         ],
       },
@@ -79,7 +80,9 @@ describe('ARM Template Rule', async function () {
       description: rule.description,
       recommendation: rule.recommendation,
       total: 1,
-      resourceIds: [],
+      resourceIds: [
+        `subscriptions/${subscriptionId}/resourceGroups/${functionResourceGroup}/providers/Microsoft.Web/sites/azamisconfigfunc`,
+      ],
     };
     const resultShouldPass = await rule.execute(target);
     expect(resultShouldPass).to.deep.equal(expectedResult, 'failing');

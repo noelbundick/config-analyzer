@@ -35,6 +35,8 @@ export const resourceGroup2 = env
   .asString();
 
 export const keyVaultId = env
-  .get(environment.keyValutId)
+  .get(environment.keyVaultId)
   .default('')
   .asString();
+
+export const functionResourceGroup = `${resourceGroup}Functions`;

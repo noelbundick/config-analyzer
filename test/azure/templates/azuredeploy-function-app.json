@@ -1,0 +1,218 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "environmentName": {
+      "type": "string",
+			"defaultValue": "azatest"
+    },
+		"misconfiguredfunctionAppName": {
+      "type": "string",
+			"defaultValue": "azamisconfigfunc"
+    },
+    "functionAppName": {
+      "type": "string",
+			"defaultValue": "azagoodfunc"
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Location for all resources."
+      }
+    }
+  },
+  "variables": {
+    "vnetName1": "[concat(parameters('environmentName'), 'vnet')]",
+    "vnetName2": "[concat(parameters('environmentName'), 'vnet2')]",
+    "vnetPrefix": "10.1.0.0/16",
+
+    "subnetName": "functions",
+    "subnetRef1": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName1'), variables('subnetName'))]",
+    "subnetRef2": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName2'), variables('subnetName'))]",
+    "subnetPrefix": "10.1.1.0/24",
+
+    "appServicePlanName1": "[concat(parameters('environmentName'), 'asp1')]",
+    "appServicePlanName2": "[concat(parameters('environmentName'), 'asp2')]"
+  },
+  "resources": [
+    {
+      "apiVersion": "2018-04-01",
+      "type": "Microsoft.Network/virtualNetworks",
+      "name": "[variables('vnetName1')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[variables('vnetPrefix')]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[variables('subnetName')]",
+            "properties": {
+              "addressPrefix": "[variables('subnetPrefix')]",
+              "serviceEndpoints": [
+                {
+                  "service": "Microsoft.Storage"
+                }
+              ],
+              "delegations": [
+                {
+                  "name": "webapp",
+                  "properties": {
+                    "serviceName": "Microsoft.Web/serverFarms",
+                    "actions": [
+                      "Microsoft.Network/virtualNetworks/subnets/action"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+      {
+        "apiVersion": "2018-02-01",
+        "type": "Microsoft.Web/serverfarms",
+        "kind": "app",
+        "name": "[variables('appServicePlanName1')]",
+        "location": "[parameters('location')]",
+        "properties": {},
+        "dependsOn": [],
+        "sku": {
+          "name": "S1"
+        }
+      },
+      {
+        "apiVersion": "2018-11-01",
+        "type": "Microsoft.Web/sites",
+        "kind": "functionapp",
+        "name": "[parameters('functionAppName')]",
+        "location": "[parameters('location')]",
+        "properties": {
+          "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName1'))]",
+					"siteConfig": {
+						"appSettings": [
+							{
+          			"name": "WEBSITE_DNS_SERVER",
+          			"value": "168.63.129.16"
+        			},
+							{
+          			"name": "WEBSITE_VNET_ROUTE_ALL",
+          			"value": "1"
+        			}
+						]
+					}
+				},
+        "resources": [
+            {
+                "name": "virtualNetwork",
+                "type": "config",
+                "apiVersion": "2018-02-01",
+                "location": "[parameters('location')]",
+                "dependsOn": [
+                  "[concat('Microsoft.Web/sites/', parameters('functionAppName'))]",
+                  "[concat('Microsoft.Network/virtualNetworks/', variables('vnetName1'))]"
+                ],
+                "properties":
+                {
+                    "subnetResourceId": "[variables('subnetRef1')]",
+                    "swiftSupported": true
+                }
+              }
+        ],
+        "dependsOn": [
+          "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName1'))]"
+        ]
+      },
+          {
+      "apiVersion": "2018-04-01",
+      "type": "Microsoft.Network/virtualNetworks",
+      "name": "[variables('vnetName2')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[variables('vnetPrefix')]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[variables('subnetName')]",
+            "properties": {
+              "addressPrefix": "[variables('subnetPrefix')]",
+              "serviceEndpoints": [
+                {
+                  "service": "Microsoft.Storage"
+                }
+              ],
+              "delegations": [
+                {
+                  "name": "webapp",
+                  "properties": {
+                    "serviceName": "Microsoft.Web/serverFarms",
+                    "actions": [
+                      "Microsoft.Network/virtualNetworks/subnets/action"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+      {
+        "apiVersion": "2018-02-01",
+        "type": "Microsoft.Web/serverfarms",
+        "kind": "app",
+        "name": "[variables('appServicePlanName2')]",
+        "location": "[parameters('location')]",
+        "properties": {},
+        "dependsOn": [],
+        "sku": {
+          "name": "S1"
+        }
+      },
+      {
+        "apiVersion": "2018-11-01",
+        "type": "Microsoft.Web/sites",
+        "kind": "functionapp",
+        "name": "[parameters('misconfiguredfunctionAppName')]",
+        "location": "[parameters('location')]",
+        "properties": {
+          "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName2'))]",
+					"siteConfig": {
+						"appSettings": [
+							{
+          			"name": "WEBSITE_DNS_SERVER",
+          			"value": "168.63.129.16"
+        			}
+						]
+					}
+				},
+        "resources": [
+            {
+                "name": "virtualNetwork",
+                "type": "config",
+                "apiVersion": "2018-02-01",
+                "location": "[parameters('location')]",
+                "dependsOn": [
+                  "[concat('Microsoft.Web/sites/', parameters('misconfiguredfunctionAppName'))]",
+                  "[concat('Microsoft.Network/virtualNetworks/', variables('vnetName2'))]"
+                ],
+                "properties":
+                {
+                    "subnetResourceId": "[variables('subnetRef2')]",
+                    "swiftSupported": true
+                }
+              }
+        ],
+        "dependsOn": [
+          "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName2'))]"
+        ]
+      }
+  ]
+}

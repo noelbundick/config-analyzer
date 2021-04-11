@@ -2,6 +2,8 @@ import {expect} from 'chai';
 import {resourceGroup, subscriptionId} from '../../azure';
 import {ScanResult} from '../../../src/scanner';
 import {ARMTemplateRule, RuleType} from '../../../src/rules';
+import {ResourceManagementClient} from '@azure/arm-resources';
+import {TokenCredential} from '@azure/identity';
 
 describe('ARM Template Rule', () => {
   const rule = new ARMTemplateRule({
@@ -45,6 +47,8 @@ describe('ARM Template Rule', () => {
     subscriptionId: subscriptionId,
     groupName: resourceGroup,
     template: template,
+    client: {} as ResourceManagementClient,
+    credential: {} as TokenCredential,
   };
 
   it('can produce a scan result', () => {

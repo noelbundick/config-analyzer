@@ -8,9 +8,11 @@ import {
   testRegion,
   keyVaultId,
   blobStorageAccountName,
+  functionResourceGroup,
 } from '.';
 
 export async function provisionEnvironment() {
+  await provisionFunctionAppEnvironment();
   const resourceClient = new ResourceManagementClient(
     new AzureIdentityCredentialAdapter(credential),
     subscriptionId
@@ -60,6 +62,33 @@ export async function teardownEnvironment() {
   );
   await resourceClient.resourceGroups.beginDeleteMethod(resourceGroup);
   await resourceClient.resourceGroups.beginDeleteMethod(resourceGroup2);
+  await resourceClient.resourceGroups.beginDeleteMethod(functionResourceGroup);
+}
+
+export async function provisionFunctionAppEnvironment() {
+  const resourceClient = new ResourceManagementClient(
+    new AzureIdentityCredentialAdapter(credential),
+    subscriptionId
+  );
+
+  await resourceClient.resourceGroups.createOrUpdate(functionResourceGroup, {
+    location: testRegion,
+  });
+  await resourceClient.deployments.createOrUpdate(
+    functionResourceGroup,
+    functionResourceGroup,
+    {
+      properties: {
+        mode: 'Incremental',
+        template: require('./templates/azuredeploy-function-app.json'),
+        parameters: {
+          location: {
+            value: testRegion,
+          },
+        },
+      },
+    }
+  );
 }
 
 async function main() {
