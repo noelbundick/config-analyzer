@@ -8,7 +8,6 @@ A CLI application that can scan Azure Resources for configuration issues.
 * A user should be able to author their own rules for supported scenarios.  
 * Rules should support multiple evaluations on a single resource.
 * Rule should support evaluations across multiple resources
-* Evaluations should be able to nested so that a child evaluation can access properties on the returned resources from the parent evalutation 
 
 
 ## Scenarios
