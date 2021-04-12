@@ -11,6 +11,11 @@ import {
 } from '.';
 
 export async function provisionEnvironment() {
+  await provisionStorageEnvironment();
+  await provisionFunctionAppEnvironment();
+}
+
+export async function provisionStorageEnvironment() {
   const resourceClient = new ResourceManagementClient(
     new AzureIdentityCredentialAdapter(credential),
     subscriptionId
@@ -41,18 +46,6 @@ export async function provisionEnvironment() {
       },
     }
   );
-
-  await provisionFunctionAppEnvironment();
-}
-
-export async function teardownEnvironment() {
-  const resourceClient = new ResourceManagementClient(
-    new AzureIdentityCredentialAdapter(credential),
-    subscriptionId
-  );
-  await resourceClient.resourceGroups.beginDeleteMethod(resourceGroup);
-  await resourceClient.resourceGroups.beginDeleteMethod(resourceGroup2);
-  // await resourceClient.resourceGroups.beginDeleteMethod(functionResourceGroup);
 }
 
 export async function provisionFunctionAppEnvironment() {
@@ -81,6 +74,15 @@ export async function provisionFunctionAppEnvironment() {
   );
 }
 
+export async function teardownEnvironment() {
+  const resourceClient = new ResourceManagementClient(
+    new AzureIdentityCredentialAdapter(credential),
+    subscriptionId
+  );
+  await resourceClient.resourceGroups.beginDeleteMethod(resourceGroup);
+  await resourceClient.resourceGroups.beginDeleteMethod(resourceGroup2);
+}
+
 async function main() {
   const args = process.argv.slice(2);
   switch (args[0]) {
@@ -89,6 +91,9 @@ async function main() {
       break;
     case 'provisionFunctions':
       await provisionFunctionAppEnvironment();
+      break;
+    case 'provisionStorage':
+      await provisionStorageEnvironment();
       break;
     case 'teardown':
       await teardownEnvironment();
