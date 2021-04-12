@@ -42,7 +42,6 @@
     "name": "function-app-vnet-integration-misconfiguration",
     "description": "",
     "type": "ARM",
-    "recommendation": "https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#event-hubs-not-locked-down-1",
     "evaluation": {
       "query": "type == `Microsoft.Web/sites`",
       "request": {

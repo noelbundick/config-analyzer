@@ -124,7 +124,7 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
     let results = this.evaluate(this.evaluation, target.template);
     const evaluation = this.evaluation;
 
-    // If we found resources with the queries, filter those down to the ones that meet all the criteria for the request operation
+    // If we found resources from the first evaluations, filter those down to the ones that meet all the criteria for the request evaluation
     if (results.length > 0 && isRequestEvaluation(evaluation)) {
       results = await filterAsync(results, async resource => {
         const response = await this.sendRequest(target, resource, evaluation);

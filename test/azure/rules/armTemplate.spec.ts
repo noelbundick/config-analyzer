@@ -1,5 +1,5 @@
 import {expect} from 'chai';
-import {ARMTarget, ARMTemplateRule, RuleType} from '../../../src/rules';
+import {ARMTemplateRule, RuleType} from '../../../src/rules';
 import {
   credential,
   functionResourceGroup,
