@@ -4,11 +4,23 @@ import {
   ResourceGraphTarget,
   RuleType,
 } from '../../../src/rules';
-import {credential, resourceGroup, resourceGroup2, subscriptionId} from '..';
+import {
+  credential,
+  resourceGroup,
+  resourceGroup2,
+  runIntegrationTests,
+  subscriptionId,
+} from '..';
 
 describe('Resource Graph Rule', function () {
   this.slow(6000);
   this.timeout(10000);
+
+  before(function () {
+    if (!runIntegrationTests) {
+      this.skip();
+    }
+  });
 
   it('can execute a resource graph rule and return a scan result', async () => {
     const rule = new ResourceGraphRule({

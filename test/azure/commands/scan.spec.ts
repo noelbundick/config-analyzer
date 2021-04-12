@@ -3,6 +3,7 @@ import {
   blobStorageAccountName,
   resourceGroup,
   resourceGroup2,
+  runIntegrationTests,
   subscriptionId,
 } from '..';
 import {RuleType} from '../../../src/rules';
@@ -11,6 +12,11 @@ import {Scanner} from '../../../src/scanner';
 describe('Scan Integration Tests', function () {
   this.slow(3000);
   this.timeout(5000);
+  before(function () {
+    if (!runIntegrationTests) {
+      this.skip();
+    }
+  });
   const nonExistingGroup = `i-should-exist-${Date.now()}-1`;
   const group1VNetId = `/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.Network/virtualNetworks/vnet`;
   const group2VNetId = `/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup2}/providers/Microsoft.Network/virtualNetworks/azatestvnet2`;

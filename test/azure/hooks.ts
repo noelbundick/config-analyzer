@@ -10,21 +10,20 @@ exports.mochaHooks = {
     this.slow(60000);
     this.timeout(300000);
 
-    if (!provisionIntegrationTests) {
-      this.skip();
+    if (provisionIntegrationTests) {
+      console.log('Provisioning Test Environment...');
+      await provisionEnvironment();
+      await sleep(5000);
     }
-    console.log('Provisioning Test Environment...');
-    await provisionEnvironment();
-    await sleep(5000);
   },
   afterAll: async function () {
     this.slow(60000);
     this.timeout(300000);
 
-    if (!provisionIntegrationTests) {
-      return;
+    if (provisionIntegrationTests) {
+      console.log('Tearing Down Test Environment...');
+      await teardownEnvironment();
     }
-    console.log('Tearing Down Test Environment...');
-    await teardownEnvironment();
+    return;
   },
 };

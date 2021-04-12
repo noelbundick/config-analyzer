@@ -1,11 +1,23 @@
 import {expect} from 'chai';
 import {ARMTemplateRule, RuleType} from '../../../src/rules';
-import {credential, resourceGroup, resourceGroup2, subscriptionId} from '..';
+import {
+  credential,
+  resourceGroup,
+  resourceGroup2,
+  runIntegrationTests,
+  subscriptionId,
+} from '..';
 import {ScanResult} from '../../../src/scanner';
 
 describe('ARM Template Rule', function () {
   this.slow(60000);
   this.timeout(300000);
+
+  before(function () {
+    if (!runIntegrationTests) {
+      this.skip();
+    }
+  });
 
   it('can get an execute an accidental storage rule scoped to a Resource Group', async () => {
     const rule = new ARMTemplateRule({
