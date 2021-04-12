@@ -42,6 +42,7 @@
     "name": "function-app-vnet-integration-misconfiguration",
     "description": "",
     "type": "ARM",
+    "recommendation": "https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#function-app-vnet-integration-misconfiguration",
     "evaluation": {
       "query": "type == `Microsoft.Web/sites`",
       "request": {
