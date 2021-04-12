@@ -52,11 +52,6 @@
             "name": "[variables('subnetName')]",
             "properties": {
               "addressPrefix": "[variables('subnetPrefix')]",
-              "serviceEndpoints": [
-                {
-                  "service": "Microsoft.Storage"
-                }
-              ],
               "delegations": [
                 {
                   "name": "webapp",
@@ -143,11 +138,6 @@
             "name": "[variables('subnetName')]",
             "properties": {
               "addressPrefix": "[variables('subnetPrefix')]",
-              "serviceEndpoints": [
-                {
-                  "service": "Microsoft.Storage"
-                }
-              ],
               "delegations": [
                 {
                   "name": "webapp",

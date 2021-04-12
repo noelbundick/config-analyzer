@@ -13,7 +13,7 @@ describe('Scan Integration Tests', function () {
   this.timeout(5000);
   const nonExistingGroup = `i-should-exist-${Date.now()}-1`;
   const group1VNetId = `/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.Network/virtualNetworks/vnet`;
-  const group2VNetId = `/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup2}/providers/Microsoft.Network/virtualNetworks/vnet`;
+  const group2VNetId = `/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup2}/providers/Microsoft.Network/virtualNetworks/azatestvnet2`;
   test
     .stdout()
     .command(['scan', '--scope', subscriptionId, '-f', '../test/rules.json'])

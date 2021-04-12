@@ -2,4 +2,5 @@ require:
   - ts-node/register
   - source-map-support/register
   - 'dotenv/config'
+  - test/azure/hooks.ts
 full-trace: true

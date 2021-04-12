@@ -1,11 +1,6 @@
 import {expect} from 'chai';
 import {ARMTemplateRule, RuleType} from '../../../src/rules';
-import {
-  credential,
-  functionResourceGroup,
-  resourceGroup,
-  subscriptionId,
-} from '..';
+import {credential, resourceGroup, resourceGroup2, subscriptionId} from '..';
 import {ScanResult} from '../../../src/scanner';
 
 describe('ARM Template Rule', function () {
@@ -51,7 +46,7 @@ describe('ARM Template Rule', function () {
   it('tests the function app misconfiguration with the RequestEvaluation', async () => {
     const target = await ARMTemplateRule.getTarget(
       subscriptionId,
-      functionResourceGroup,
+      resourceGroup2,
       credential
     );
     const rule = new ARMTemplateRule({
@@ -81,7 +76,7 @@ describe('ARM Template Rule', function () {
       recommendation: rule.recommendation,
       total: 1,
       resourceIds: [
-        `subscriptions/${subscriptionId}/resourceGroups/${functionResourceGroup}/providers/Microsoft.Web/sites/azamisconfigfunc`,
+        `subscriptions/${subscriptionId}/resourceGroups/${resourceGroup2}/providers/Microsoft.Web/sites/azamisconfigfunc`,
       ],
     };
     const resultShouldPass = await rule.execute(target);

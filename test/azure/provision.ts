@@ -6,13 +6,11 @@ import {
   resourceGroup2,
   subscriptionId,
   testRegion,
-  keyVaultId,
+  vmPassword,
   blobStorageAccountName,
-  functionResourceGroup,
 } from '.';
 
 export async function provisionEnvironment() {
-  await provisionFunctionAppEnvironment();
   const resourceClient = new ResourceManagementClient(
     new AzureIdentityCredentialAdapter(credential),
     subscriptionId
@@ -21,9 +19,7 @@ export async function provisionEnvironment() {
   await resourceClient.resourceGroups.createOrUpdate(resourceGroup, {
     location: testRegion,
   });
-  await resourceClient.resourceGroups.createOrUpdate(resourceGroup2, {
-    location: testRegion,
-  });
+
   await resourceClient.deployments.createOrUpdate(
     resourceGroup,
     resourceGroup,
@@ -32,9 +28,6 @@ export async function provisionEnvironment() {
         mode: 'Incremental',
         template: require('./templates/azuredeploy.json'),
         parameters: {
-          resourceGroup2: {
-            value: resourceGroup2,
-          },
           location: {
             value: testRegion,
           },
@@ -42,17 +35,14 @@ export async function provisionEnvironment() {
             value: blobStorageAccountName,
           },
           adminPasswordOrKey: {
-            reference: {
-              keyVault: {
-                id: keyVaultId,
-              },
-              secretName: 'DefaultAdminPasswordSecret',
-            },
+            value: vmPassword,
           },
         },
       },
     }
   );
+
+  await provisionFunctionAppEnvironment();
 }
 
 export async function teardownEnvironment() {
@@ -62,7 +52,7 @@ export async function teardownEnvironment() {
   );
   await resourceClient.resourceGroups.beginDeleteMethod(resourceGroup);
   await resourceClient.resourceGroups.beginDeleteMethod(resourceGroup2);
-  await resourceClient.resourceGroups.beginDeleteMethod(functionResourceGroup);
+  // await resourceClient.resourceGroups.beginDeleteMethod(functionResourceGroup);
 }
 
 export async function provisionFunctionAppEnvironment() {
@@ -71,12 +61,12 @@ export async function provisionFunctionAppEnvironment() {
     subscriptionId
   );
 
-  await resourceClient.resourceGroups.createOrUpdate(functionResourceGroup, {
+  await resourceClient.resourceGroups.createOrUpdate(resourceGroup2, {
     location: testRegion,
   });
   await resourceClient.deployments.createOrUpdate(
-    functionResourceGroup,
-    functionResourceGroup,
+    resourceGroup2,
+    resourceGroup,
     {
       properties: {
         mode: 'Incremental',
@@ -96,6 +86,9 @@ async function main() {
   switch (args[0]) {
     case 'provision':
       await provisionEnvironment();
+      break;
+    case 'provisionFunctions':
+      await provisionFunctionAppEnvironment();
       break;
     case 'teardown':
       await teardownEnvironment();
