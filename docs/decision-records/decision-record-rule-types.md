@@ -3,9 +3,7 @@
 
 ## Context and Problem Statement
 
-There are cases across Azure configurations where the configuration can appear secure but it is not.  
-The aim of this application is to develop rules that identify Resources that break certain conditions and notfiy the user  
-of the potential issues and fixes. This decision record represents the pros and cons of the different ways to scan Azure Resources. 
+There are a wide range of issues and challenge when it comes to integrating with VNETs in Azure that may not be immediately apparent to the customer or CSE dev crews. This project aims to identify those issues and notify the user of ways to fix the problem. This document represents the pros and cons of the different ways to scan Azure Resources and the decision process for evaluating which scenerios to support. 
 
 ## Decision Drivers
 
@@ -31,10 +29,10 @@ Chosen options:
 
 ### Priorities
 MVP  
-* Resource Graph Rule (currently, Resource Graph rules can be scanned, but not many queries have been written yet, because it doesn't return the all the properties we need to evaluate some rules)
+* Resource Graph Rule
 * ARM template (exported at Resource Group Scope)  
 
-Strech  
+Future 
 * Arm Template (user supplied, deployment scopes)
 * Bicep option can be accomplished through compiling down to ARM Templates, so not much would need be changed to add this functionality.
 * Terraform rules are a great option and should be pursued after completing previous options.   
