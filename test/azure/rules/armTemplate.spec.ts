@@ -94,7 +94,7 @@ describe('ARM Template Rule', function () {
     const resultShouldPass = await rule.execute(target);
     expect(resultShouldPass).to.deep.equal(expectedResult, 'failing');
   });
-  it('tests the Event Hub is not locked down 1 rule', async () => {
+  it('tests the Event Hub is not locked down rule 1', async () => {
     const target = await ARMTemplateRule.getTarget(
       subscriptionId,
       resourceGroup,
@@ -117,7 +117,36 @@ describe('ARM Template Rule', function () {
       recommendation: rule.recommendation,
       total: 1,
       resourceIds: [
-        `subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.EventHub/namespaces/networkRuleSets/misconfigEventHub/default`,
+        `subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.EventHub/namespaces/networkRuleSets/misconfigRule1/default`,
+      ],
+    };
+    const result = await rule.execute(target);
+    expect(result).to.deep.equal(expectedResult);
+  });
+  it('tests the Event Hub is not locked down rule 2', async () => {
+    const target = await ARMTemplateRule.getTarget(
+      subscriptionId,
+      resourceGroup,
+      credential
+    );
+    const rule = new ARMTemplateRule({
+      name: 'event-hubs-not-locked-down-2',
+      description: '',
+      type: 'ARM' as RuleType.ARM,
+      recommendation:
+        'https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#event-hubs-not-locked-down-2',
+      evaluation: {
+        query:
+          'type == `Microsoft.EventHub/namespaces/networkRuleSets` && properties.defaultAction == `Allow` && (length(properties.ipRules) > `0` || length(properties.virtualNetworkRules) > `0`)',
+      },
+    });
+    const expectedResult: ScanResult = {
+      ruleName: rule.name,
+      description: rule.description,
+      recommendation: rule.recommendation,
+      total: 1,
+      resourceIds: [
+        `subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.EventHub/namespaces/networkRuleSets/misconfigRule2/default`,
       ],
     };
     const result = await rule.execute(target);

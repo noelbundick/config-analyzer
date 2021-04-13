@@ -4,16 +4,23 @@
 	"parameters": {
 		"eventHubNamespaceName": {
 			"type": "string",
-			"defaultValue": "azaTestEventHub",
+			"defaultValue": "azaTestNamespace",
 			"metadata": {
 				"description": "Name for correctly configured Event Hub"
 			}
 		},
 		"eventHubNamespaceName2": {
 			"type": "string",
-			"defaultValue": "misconfigEventHub",
+			"defaultValue": "misconfigRule1",
 			"metadata": {
-				"description": "Name for misconfigured Event Hub"
+				"description": "Name for misconfigured Event Hub rule 1"
+			}
+		},
+		"eventHubNamespaceName3": {
+			"type": "string",
+			"defaultValue": "misconfigRule2",
+			"metadata": {
+				"description": "Name for misconfigured Event Hub rule 2"
 			}
 		},
 		"eventHubName": {
@@ -25,9 +32,16 @@
 		},
 		"eventHubName2": {
 			"type": "string",
-			"defaultValue": "azaTestEventHub2",
+			"defaultValue": "misconfigRule1",
 			"metadata": {
-				"description": "Name for misconfigured Event Hub"
+				"description": "Name for misconfigured Event Hub rule 1"
+			}
+		},
+		"eventHubName3": {
+			"type": "string",
+			"defaultValue": "misconfigRule2",
+			"metadata": {
+				"description": "Name for misconfigured Event Hub rule 2"
 			}
 		},
 		"location": {
@@ -90,13 +104,13 @@
 				"virtualNetworkRules": [],
 				"ipRules": [
 					{
-            "ipMask": "73.181.232.32",
-            "action": "Allow"
-          }
+						"ipMask": "73.181.232.32",
+						"action": "Allow"
+					}
 				]
 			}
 		},
-				{
+		{
 			"type": "Microsoft.EventHub/namespaces",
 			"apiVersion": "2018-01-01-preview",
 			"name": "[parameters('eventHubNamespaceName2')]",
@@ -138,6 +152,55 @@
 				"defaultAction": "Deny",
 				"virtualNetworkRules": [],
 				"ipRules": []
+			}
+		},
+		{
+			"type": "Microsoft.EventHub/namespaces",
+			"apiVersion": "2018-01-01-preview",
+			"name": "[parameters('eventHubNamespaceName3')]",
+			"location": "[parameters('location')]",
+			"sku": {
+				"name": "[parameters('eventHubSku')]",
+				"tier": "[parameters('eventHubSku')]",
+				"capacity": 1
+			},
+			"properties": {
+				"isAutoInflateEnabled": false,
+				"maximumThroughputUnits": 0
+
+
+			}
+		},
+		{
+			"type": "Microsoft.EventHub/namespaces/eventhubs",
+			"apiVersion": "2017-04-01",
+			"name": "[concat(parameters('eventHubNamespaceName3'), '/', parameters('eventHubName3'))]",
+			"location": "[parameters('location')]",
+			"dependsOn": [
+				"[resourceId('Microsoft.EventHub/namespaces', parameters('eventHubNamespaceName3'))]"
+			],
+			"properties": {
+				"messageRetentionInDays": 7,
+				"partitionCount": 1
+			}
+		},
+		{
+			"type": "Microsoft.EventHub/namespaces/networkRuleSets",
+			"apiVersion": "2018-01-01-preview",
+			"name": "[concat(parameters('eventHubNamespaceName3'), '/default')]",
+			"location": "[parameters('location')]",
+			"dependsOn": [
+				"[resourceId('Microsoft.EventHub/namespaces', parameters('eventHubNamespaceName3'))]"
+			],
+			"properties": {
+				"defaultAction": "Allow",
+				"virtualNetworkRules": [],
+				"ipRules": [
+					{
+						"ipMask": "73.181.232.32",
+						"action": "Allow"
+					}
+				]
 			}
 		}
 	]
