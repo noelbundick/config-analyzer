@@ -58,7 +58,7 @@ Future
 ### Bicep Deployments
 
 * Good, because customers might use Bicep more in the future as opposed to ARM templates because of the improvements Bicep brings 
-* Bad, because Bicep is compiles to JSON so it might be more useful to have rules for the JSON rather than the language specific Bicep
+* Bad, because Bicep is compiled to JSON so it might be more useful to have rules for the JSON rather than the language specific Bicep
 * Bad because its still in preview, so there might be less immediate use cases
 
 ### Terraform
