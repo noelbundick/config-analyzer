@@ -13,6 +13,7 @@ import {
 export async function provisionEnvironment() {
   await provisionStorageEnvironment();
   await provisionFunctionAppEnvironment();
+  await provisionEventHubEnvironment();
 }
 
 export async function provisionStorageEnvironment() {
@@ -74,6 +75,32 @@ export async function provisionFunctionAppEnvironment() {
   );
 }
 
+export async function provisionEventHubEnvironment() {
+  const resourceClient = new ResourceManagementClient(
+    new AzureIdentityCredentialAdapter(credential),
+    subscriptionId
+  );
+
+  await resourceClient.resourceGroups.createOrUpdate(resourceGroup, {
+    location: testRegion,
+  });
+  await resourceClient.deployments.createOrUpdate(
+    resourceGroup,
+    `${resourceGroup}EventHub`,
+    {
+      properties: {
+        mode: 'Incremental',
+        template: require('./templates/azuredeploy-event-hubs.json'),
+        parameters: {
+          location: {
+            value: testRegion,
+          },
+        },
+      },
+    }
+  );
+}
+
 export async function teardownEnvironment() {
   const resourceClient = new ResourceManagementClient(
     new AzureIdentityCredentialAdapter(credential),
@@ -94,6 +121,9 @@ async function main() {
       break;
     case 'provisionStorage':
       await provisionStorageEnvironment();
+      break;
+    case 'provisionEventHubs':
+      await provisionEventHubEnvironment();
       break;
     case 'teardown':
       await teardownEnvironment();

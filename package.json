@@ -21,6 +21,7 @@
     "test:azure:provision": "ts-node -r dotenv/config test/azure/provision.ts provision",
     "test:azure:provision:functions": "ts-node -r dotenv/config test/azure/provision.ts provisionFunctions",
     "test:azure:provision:storage": "ts-node -r dotenv/config test/azure/provision.ts provisionStorage",
+    "test:azure:provision:eventHubs": "ts-node -r dotenv/config test/azure/provision.ts provisionEventHubs",
     "test:azure:teardown": "ts-node -r dotenv/config test/azure/provision.ts teardown",
     "lint": "gts lint",
     "clean": "gts clean",
