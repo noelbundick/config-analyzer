@@ -1,6 +1,6 @@
 # AZA - Scenarios
 ## What is it?
-The goal of this project is to allow a user to quickly scan Azure Resources for potential configuration issues, specifically when it comes to integrating with VNETs. There are a wide range of issues and challenge that may not be immediately apparent to the customer or CSE dev crews, and this project aims to identify and notify the user of ways to fix the problem. This document represents the scenerios chosen from the [Decision Record](https://github.com/noelbundick/config-analyzer/tree/main/docs/decision-records/decision-record-rule-types.md)
+The goal of this project is to allow a user to quickly scan Azure Resources for potential configuration issues, specifically when it comes to integrating with VNETs. There are a wide range of issues and challenge that may not be immediately apparent to the customer or CSE dev crews, and this project aims to identify and notify the user of ways to fix the problem. This document represents the scenarios chosen from the [Decision Record](https://github.com/noelbundick/config-analyzer/tree/main/docs/decision-records/decision-record-rule-types.md)
 ## Behavior
  Azure Resources can be scanned in a number of different ways, allowing for many different rule types to be created. All rule types should support the following:
 * It should return resources that break a condition along with documentation on how to fix it.    
