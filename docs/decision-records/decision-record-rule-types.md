@@ -47,7 +47,6 @@ Future
 * Good, because not yet deployed infrastucture can be scanned before deployment  
 * Bad, because there are no Typscript Types for Azure Resources and ARM templates
 * Bad, because there is potential for rules to be outdated due to changes to ARM Template api versions, schemas, or functions
-* Bad, because challenges 
 
 ### What If Deployments
 
