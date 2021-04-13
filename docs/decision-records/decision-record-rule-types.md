@@ -43,7 +43,7 @@ Future
 ### ARM Templates
 
 * Good, because Bicep deployments can be converted to ARM templates
-* Good, because existing infrastructor can be exported as an ARM template 
+* Good, because existing infrastructure can be exported as an ARM template 
 * Good, because not yet deployed infrastucture can be scanned before deployment  
 * Bad, because there are no Typscript Types for Azure Resources and ARM templates
 * Bad, because there is potential for rules to be outdated due to changes to ARM Template api versions, schemas, or functions
