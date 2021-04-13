@@ -94,4 +94,33 @@ describe('ARM Template Rule', function () {
     const resultShouldPass = await rule.execute(target);
     expect(resultShouldPass).to.deep.equal(expectedResult, 'failing');
   });
+  it('tests the Event Hub is not locked down 1 rule', async () => {
+    const target = await ARMTemplateRule.getTarget(
+      subscriptionId,
+      resourceGroup,
+      credential
+    );
+    const rule = new ARMTemplateRule({
+      name: 'event-hubs-not-locked-down-1',
+      description: '',
+      type: 'ARM' as RuleType.ARM,
+      recommendation:
+        'https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#event-hubs-not-locked-down-1',
+      evaluation: {
+        query:
+          'type == `Microsoft.EventHub/namespaces/networkRuleSets` && properties.defaultAction == `Deny` && length(properties.ipRules) == `0` && length(properties.virtualNetworkRules) == `0`',
+      },
+    });
+    const expectedResult: ScanResult = {
+      ruleName: rule.name,
+      description: rule.description,
+      recommendation: rule.recommendation,
+      total: 1,
+      resourceIds: [
+        `subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.EventHub/namespaces/networkRuleSets/misconfigEventHub/default`,
+      ],
+    };
+    const result = await rule.execute(target);
+    expect(result).to.deep.equal(expectedResult);
+  });
 });

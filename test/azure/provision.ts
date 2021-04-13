@@ -10,6 +10,13 @@ import {
   blobStorageAccountName,
 } from '.';
 
+function getClient() {
+  return new ResourceManagementClient(
+    new AzureIdentityCredentialAdapter(credential),
+    subscriptionId
+  );
+}
+
 export async function provisionEnvironment() {
   await provisionStorageEnvironment();
   await provisionFunctionAppEnvironment();
@@ -17,10 +24,7 @@ export async function provisionEnvironment() {
 }
 
 export async function provisionStorageEnvironment() {
-  const resourceClient = new ResourceManagementClient(
-    new AzureIdentityCredentialAdapter(credential),
-    subscriptionId
-  );
+  const resourceClient = getClient();
 
   await resourceClient.resourceGroups.createOrUpdate(resourceGroup, {
     location: testRegion,
@@ -50,17 +54,14 @@ export async function provisionStorageEnvironment() {
 }
 
 export async function provisionFunctionAppEnvironment() {
-  const resourceClient = new ResourceManagementClient(
-    new AzureIdentityCredentialAdapter(credential),
-    subscriptionId
-  );
+  const resourceClient = getClient();
 
   await resourceClient.resourceGroups.createOrUpdate(resourceGroup2, {
     location: testRegion,
   });
   await resourceClient.deployments.createOrUpdate(
     resourceGroup2,
-    resourceGroup,
+    `${resourceGroup}Functions`,
     {
       properties: {
         mode: 'Incremental',
@@ -76,10 +77,7 @@ export async function provisionFunctionAppEnvironment() {
 }
 
 export async function provisionEventHubEnvironment() {
-  const resourceClient = new ResourceManagementClient(
-    new AzureIdentityCredentialAdapter(credential),
-    subscriptionId
-  );
+  const resourceClient = getClient();
 
   await resourceClient.resourceGroups.createOrUpdate(resourceGroup, {
     location: testRegion,

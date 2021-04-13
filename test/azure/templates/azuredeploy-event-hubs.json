@@ -4,11 +4,31 @@
 	"parameters": {
 		"eventHubNamespaceName": {
 			"type": "string",
-			"defaultValue": "azaTestEventHub"
+			"defaultValue": "azaTestEventHub",
+			"metadata": {
+				"description": "Name for correctly configured Event Hub"
+			}
+		},
+		"eventHubNamespaceName2": {
+			"type": "string",
+			"defaultValue": "misconfigEventHub",
+			"metadata": {
+				"description": "Name for misconfigured Event Hub"
+			}
 		},
 		"eventHubName": {
 			"type": "string",
-			"defaultValue": "azaTestEventHub"
+			"defaultValue": "azaTestEventHub",
+			"metadata": {
+				"description": "Name for correctly configured Event Hub"
+			}
+		},
+		"eventHubName2": {
+			"type": "string",
+			"defaultValue": "azaTestEventHub2",
+			"metadata": {
+				"description": "Name for misconfigured Event Hub"
+			}
 		},
 		"location": {
 			"type": "string",
@@ -61,9 +81,58 @@
 			"type": "Microsoft.EventHub/namespaces/networkRuleSets",
 			"apiVersion": "2018-01-01-preview",
 			"name": "[concat(parameters('eventHubNamespaceName'), '/default')]",
-			"location": "East US 2",
+			"location": "[parameters('location')]",
 			"dependsOn": [
 				"[resourceId('Microsoft.EventHub/namespaces', parameters('eventHubNamespaceName'))]"
+			],
+			"properties": {
+				"defaultAction": "Deny",
+				"virtualNetworkRules": [],
+				"ipRules": [
+					{
+            "ipMask": "73.181.232.32",
+            "action": "Allow"
+          }
+				]
+			}
+		},
+				{
+			"type": "Microsoft.EventHub/namespaces",
+			"apiVersion": "2018-01-01-preview",
+			"name": "[parameters('eventHubNamespaceName2')]",
+			"location": "[parameters('location')]",
+			"sku": {
+				"name": "[parameters('eventHubSku')]",
+				"tier": "[parameters('eventHubSku')]",
+				"capacity": 1
+			},
+			"properties": {
+				"isAutoInflateEnabled": false,
+				"maximumThroughputUnits": 0
+
+
+			}
+		},
+		{
+			"type": "Microsoft.EventHub/namespaces/eventhubs",
+			"apiVersion": "2017-04-01",
+			"name": "[concat(parameters('eventHubNamespaceName2'), '/', parameters('eventHubName2'))]",
+			"location": "[parameters('location')]",
+			"dependsOn": [
+				"[resourceId('Microsoft.EventHub/namespaces', parameters('eventHubNamespaceName2'))]"
+			],
+			"properties": {
+				"messageRetentionInDays": 7,
+				"partitionCount": 1
+			}
+		},
+		{
+			"type": "Microsoft.EventHub/namespaces/networkRuleSets",
+			"apiVersion": "2018-01-01-preview",
+			"name": "[concat(parameters('eventHubNamespaceName2'), '/default')]",
+			"location": "[parameters('location')]",
+			"dependsOn": [
+				"[resourceId('Microsoft.EventHub/namespaces', parameters('eventHubNamespaceName2'))]"
 			],
 			"properties": {
 				"defaultAction": "Deny",
