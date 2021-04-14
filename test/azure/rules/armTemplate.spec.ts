@@ -24,7 +24,7 @@ describe('ARM Template Rule', function () {
       name: 'accidental-public-storage',
       description:
         'Finds Storage Accounts with a Private Endpoint configured but the public endpoint is still enabled',
-      type: 'ARM' as RuleType.ARM,
+      type: RuleType.ARM,
       evaluation: {
         query:
           'type == `Microsoft.Storage/storageAccounts` && properties.networkAcls.defaultAction == `Allow`',
@@ -64,7 +64,7 @@ describe('ARM Template Rule', function () {
     const rule = new ARMTemplateRule({
       name: 'function-app-vnet-integration-misconfiguration',
       description: '',
-      type: 'ARM' as RuleType.ARM,
+      type: RuleType.ARM,
       recommendation:
         'https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#event-hubs-not-locked-down-1',
       evaluation: {

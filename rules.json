@@ -44,14 +44,14 @@
     "type": "ARM",
     "recommendation": "https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#function-app-vnet-integration-misconfiguration",
     "evaluation": {
-      "query": "type == `Microsoft.Web/sites`",
+      "query": "type == 'Microsoft.Web/sites' && kind == 'functionapp'",
       "request": {
         "operation": "config/appsettings/list",
         "query": "properties.WEBSITE_DNS_SERVER != '168.63.129.16' || properties.WEBSITE_VNET_ROUTE_ALL != '1'"
       },
       "and": [
         {
-          "query": "type == `Microsoft.Web/sites/virtualNetworkConnections` && starts_with(name, `{{parent.name}}/`)"
+          "query": "type == 'Microsoft.Web/sites/virtualNetworkConnections' && starts_with(name, '{{parent.name}}/')"
         }
       ]
     }

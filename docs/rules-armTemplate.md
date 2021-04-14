@@ -27,7 +27,7 @@ Simple example that finds all Storage Accounts with the storage firewall disable
   "name": "storage-public",
   "description": "Storage Accounts with Internet access",
   "type": "ARM",
-  "recommendation": "optional link to docs on how to fix the issue"
+  "recommendation": "optional link to docs on how to fix the issue",
   "evaluation": {
     "query": "type == `Microsoft.Storage/storageAccounts` && properties.networkAcls.defaultAction == `Allow`"
   }

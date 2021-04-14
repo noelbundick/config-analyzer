@@ -1,12 +1,17 @@
 import {ResourceManagementClient} from '@azure/arm-resources';
 import {TokenCredential} from '@azure/identity';
-import {HttpMethods} from '@azure/core-http';
 import JMESPath = require('jmespath');
 import Handlebars = require('handlebars');
 
 import {BaseRule, RuleType} from '.';
 import {AzureIdentityCredentialAdapter} from '../azure';
 import {ScanResult} from '../scanner';
+
+// needed for sendRequest method
+// from @azure/core-http => https://azuresdkdocs.blob.core.windows.net/$web/javascript/azure-core-http/1.2.4/globals.html#httpmethods
+enum HttpMethods {
+  POST = 'POST',
+}
 
 export interface ARMTemplate {
   $schema: string;
@@ -58,6 +63,7 @@ function isRequestEvaluation(
   return (evaluation as RequestEvaluation).request !== undefined;
 }
 
+// returns a resolved promise so that any async calls in the callback can be resolved before returning
 function mapAsync<T1, T2>(
   array: T1[],
   callback: (value: T1, index: number, array: T1[]) => Promise<T2>
@@ -65,11 +71,14 @@ function mapAsync<T1, T2>(
   return Promise.all(array.map(callback));
 }
 
+// if the array is empty, it returns an empty array
 async function filterAsync<T>(
   array: T[],
   callback: (value: T, index: number, array: T[]) => Promise<boolean>
 ): Promise<T[]> {
+  // creates boolean array and maintains the same index order as the original array
   const filterMap = await mapAsync(array, callback);
+  // filters over the original array based on the filterMap array value at each index
   return array.filter((_, index) => filterMap[index]);
 }
 
@@ -101,7 +110,7 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
     subscriptionId: string,
     groupName: string,
     credential: TokenCredential
-  ) {
+  ): Promise<ARMTarget> {
     const client = new ResourceManagementClient(
       new AzureIdentityCredentialAdapter(credential),
       subscriptionId
@@ -116,16 +125,18 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
       credential,
       client,
       template: template._response.parsedBody.template,
-      type: 'ARM' as RuleType.ARM,
+      type: RuleType.ARM,
     };
   }
 
   async execute(target: ARMTarget) {
     let results = this.evaluate(this.evaluation, target.template);
+    // creating constant so type guard works for isRequestEvaluaion
+    // revisit and fix this
     const evaluation = this.evaluation;
-
     // If we found resources from the first evaluations, filter those down to the ones that meet all the criteria for the request evaluation
-    if (results.length > 0 && isRequestEvaluation(evaluation)) {
+    if (isRequestEvaluation(evaluation)) {
+      // returns empty array if results are empty
       results = await filterAsync(results, async resource => {
         const response = await this.sendRequest(target, resource, evaluation);
         return JMESPath.search(response.parsedBody, evaluation.request.query);
@@ -193,15 +204,22 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
       'https://graph.microsoft.com/.default'
     );
     const options = {
-      url: `https://management.azure.com/subscriptions/${target.subscriptionId}/resourceGroups/${target.groupName}/providers/${resource.type}/${resource.name}/${evaluation.request.operation}?api-version=${resource.apiVersion}`,
-      method: 'POST' as HttpMethods,
+      url: this.getRequestUrl(target, resource, evaluation),
+      method: HttpMethods.POST,
       headers: {
         Authorization: `Bearer ${token?.token}`,
         'Content-Type': 'application/json',
-        Host: 'management.azure.com',
       },
     };
     return await target.client.sendRequest(options);
+  }
+
+  getRequestUrl(
+    target: ARMTarget,
+    resource: ARMResource,
+    evaluation: RequestEvaluation
+  ) {
+    return `https://management.azure.com/subscriptions/${target.subscriptionId}/resourceGroups/${target.groupName}/providers/${resource.type}/${resource.name}/${evaluation.request.operation}?api-version=${resource.apiVersion}`;
   }
 
   toResourceIdARMFunction(resource: ARMResource) {

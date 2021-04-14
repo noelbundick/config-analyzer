@@ -40,7 +40,7 @@ See [Event Hubs - Allow VNETS - ARM Template](https://docs.microsoft.com/en-us/a
 ## Function App VNET Integration Misconfiguration
 name: "function-app-vnet-integration-misconfiguration"
 ### Description 
-Finds Function Apps integrated with a virtual network but the app settings for WEBSITE_VNET_ROUTE_ALL is not 1 and WEBSITE_DNS_SERVER is not 168.63.129.16. 
+Finds Function Apps integrated with a virtual network but the app settings for `WEBSITE_VNET_ROUTE_ALL` is not `1` and `WEBSITE_DNS_SERVER` is not `168.63.129.16`. 
 
 ### How to Fix
 By default, your app routes only RFC1918 traffic into your VNet. If you want to route all of your outbound traffic into your VNet, then change or add the app setting WEBSITE_VNET_ROUTE_ALL to 1.  
