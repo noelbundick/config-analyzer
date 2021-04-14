@@ -103,7 +103,7 @@ describe('ARM Template Rule', function () {
     const rule = new ARMTemplateRule({
       name: 'event-hubs-not-locked-down-1',
       description: '',
-      type: 'ARM' as RuleType.ARM,
+      type: RuleType.ARM,
       recommendation:
         'https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#event-hubs-not-locked-down-1',
       evaluation: {
@@ -132,7 +132,7 @@ describe('ARM Template Rule', function () {
     const rule = new ARMTemplateRule({
       name: 'event-hubs-not-locked-down-2',
       description: '',
-      type: 'ARM' as RuleType.ARM,
+      type: RuleType.ARM,
       recommendation:
         'https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#event-hubs-not-locked-down-2',
       evaluation: {
