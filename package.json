@@ -34,7 +34,6 @@
   },
   "devDependencies": {
     "@azure/arm-resources": "^4.0.0",
-    "@azure/core-http": "^1.2.4",
     "@istanbuljs/nyc-config-typescript": "^1.0.1",
     "@oclif/dev-cli": "^1.26.0",
     "@oclif/test": "^1.2.8",
