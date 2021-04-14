@@ -123,8 +123,6 @@
 			"properties": {
 				"isAutoInflateEnabled": false,
 				"maximumThroughputUnits": 0
-
-
 			}
 		},
 		{
@@ -167,8 +165,6 @@
 			"properties": {
 				"isAutoInflateEnabled": false,
 				"maximumThroughputUnits": 0
-
-
 			}
 		},
 		{
