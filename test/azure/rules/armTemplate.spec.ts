@@ -1,10 +1,24 @@
 import {expect} from 'chai';
 import {ARMTemplateRule, RuleType} from '../../../src/rules';
-import {credential, resourceGroup, subscriptionId} from '..';
+import {
+  credential,
+  resourceGroup,
+  resourceGroup2,
+  runIntegrationTests,
+  subscriptionId,
+} from '..';
+import {ScanResult} from '../../../src/scanner';
 
 describe('ARM Template Rule', function () {
-  this.slow(15000);
-  this.timeout(20000);
+  this.slow(60000);
+  this.timeout(300000);
+
+  before(function () {
+    if (!runIntegrationTests) {
+      this.skip();
+    }
+  });
+
   it('can get an execute an accidental storage rule scoped to a Resource Group', async () => {
     const rule = new ARMTemplateRule({
       name: 'accidental-public-storage',
@@ -22,17 +36,11 @@ describe('ARM Template Rule', function () {
         ],
       },
     });
-    const template = await ARMTemplateRule.getTemplate(
+    const target = await ARMTemplateRule.getTarget(
       subscriptionId,
       resourceGroup,
       credential
     );
-    const target = {
-      type: 'ARM' as RuleType.ARM,
-      subscriptionId: subscriptionId,
-      groupName: resourceGroup,
-      template: template._response.parsedBody.template,
-    };
     // TODO: clean this up to not have hard coded values
     // this can happen when we refactor the test ARM Temlplate
     const storageAccountName = 'azabhcf24jbcuxwo';
@@ -46,5 +54,44 @@ describe('ARM Template Rule', function () {
     };
     const result = await rule.execute(target);
     expect(result).to.deep.equal(expectedResult);
+  });
+  it('tests the function app misconfiguration with the RequestEvaluation', async () => {
+    const target = await ARMTemplateRule.getTarget(
+      subscriptionId,
+      resourceGroup2,
+      credential
+    );
+    const rule = new ARMTemplateRule({
+      name: 'function-app-vnet-integration-misconfiguration',
+      description: '',
+      type: 'ARM' as RuleType.ARM,
+      recommendation:
+        'https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#event-hubs-not-locked-down-1',
+      evaluation: {
+        query: 'type == `Microsoft.Web/sites`',
+        request: {
+          operation: 'config/appsettings/list',
+          query:
+            "properties.WEBSITE_DNS_SERVER != '168.63.129.16' || properties.WEBSITE_VNET_ROUTE_ALL != '1'",
+        },
+        and: [
+          {
+            query:
+              'type == `Microsoft.Web/sites/virtualNetworkConnections` && starts_with(name, `{{parent.name}}/`)',
+          },
+        ],
+      },
+    });
+    const expectedResult: ScanResult = {
+      ruleName: rule.name,
+      description: rule.description,
+      recommendation: rule.recommendation,
+      total: 1,
+      resourceIds: [
+        `subscriptions/${subscriptionId}/resourceGroups/${resourceGroup2}/providers/Microsoft.Web/sites/azamisconfigfunc`,
+      ],
+    };
+    const resultShouldPass = await rule.execute(target);
+    expect(resultShouldPass).to.deep.equal(expectedResult, 'failing');
   });
 });

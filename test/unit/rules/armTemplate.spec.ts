@@ -1,7 +1,9 @@
 import {expect} from 'chai';
 import {resourceGroup, subscriptionId} from '../../azure';
 import {ScanResult} from '../../../src/scanner';
-import {ARMTemplateRule, RuleType} from '../../../src/rules';
+import {ARMTarget, ARMTemplateRule, RuleType} from '../../../src/rules';
+import {ResourceManagementClient} from '@azure/arm-resources';
+import {TokenCredential} from '@azure/identity';
 
 describe('ARM Template Rule', () => {
   const rule = new ARMTemplateRule({
@@ -40,11 +42,13 @@ describe('ARM Template Rule', () => {
       },
     ],
   };
-  const testARMTarget = {
-    type: 'ARM' as RuleType.ARM,
+  const testARMTarget: ARMTarget = {
+    type: RuleType.ARM,
     subscriptionId: subscriptionId,
     groupName: resourceGroup,
     template: template,
+    client: {} as ResourceManagementClient,
+    credential: {} as TokenCredential,
   };
 
   it('can produce a scan result', () => {
@@ -96,7 +100,7 @@ describe('ARM Template Rule', () => {
       name: 'test-and-rule',
       description:
         "used for testing a rule with an 'and' evalutation - first eval should find a resource and the second eval excludes it from results",
-      type: 'ARM' as RuleType.ARM,
+      type: RuleType.ARM,
       evaluation: {
         query:
           'type == `Microsoft.Storage/storageAccounts` && name == `storageAccountName`',
@@ -123,7 +127,7 @@ describe('ARM Template Rule', () => {
       name: 'test-and-rule',
       description:
         "used for testing a rule with an 'and' evaluation - first eval should find a resource and should also find a resource",
-      type: 'ARM' as RuleType.ARM,
+      type: RuleType.ARM,
       evaluation: {
         query:
           'type == `Microsoft.Storage/storageAccounts` && name == `storageAccountName`',
@@ -143,5 +147,22 @@ describe('ARM Template Rule', () => {
     };
     const resultShouldPass = await rule.execute(testARMTarget);
     expect(resultShouldPass).to.deep.equal(expectedResult, 'failing');
+  });
+
+  it('can build a request Url for the sendRequest method', () => {
+    const evaluation = {
+      query: '',
+      request: {
+        query: '',
+        operation: 'path/for/operation',
+      },
+    };
+    const result = rule.getRequestUrl(
+      testARMTarget,
+      template.resources[0],
+      evaluation
+    );
+    const expectedResult = `https://management.azure.com/subscriptions/${testARMTarget.subscriptionId}/resourceGroups/${testARMTarget.groupName}/providers/${template.resources[0].type}/${template.resources[0].name}/${evaluation.request.operation}?api-version=${template.resources[0].apiVersion}`;
+    expect(result).to.equal(expectedResult);
   });
 });

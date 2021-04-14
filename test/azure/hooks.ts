@@ -5,22 +5,25 @@ const sleep = (ms: number) => {
   return new Promise(callback => setTimeout(callback, ms));
 };
 
-before(async function () {
-  this.slow(60000);
-  this.timeout(300000);
+exports.mochaHooks = {
+  beforeAll: async function () {
+    this.slow(60000);
+    this.timeout(300000);
 
-  if (!provisionIntegrationTests) {
-    this.skip();
-  }
+    if (provisionIntegrationTests) {
+      console.log('Provisioning Test Environment...');
+      await provisionEnvironment();
+      await sleep(5000);
+    }
+  },
+  afterAll: async function () {
+    this.slow(60000);
+    this.timeout(300000);
 
-  await provisionEnvironment();
-  await sleep(5000);
-});
-
-after(async () => {
-  if (!provisionIntegrationTests) {
+    if (provisionIntegrationTests) {
+      console.log('Tearing Down Test Environment...');
+      await teardownEnvironment();
+    }
     return;
-  }
-
-  await teardownEnvironment();
-});
+  },
+};

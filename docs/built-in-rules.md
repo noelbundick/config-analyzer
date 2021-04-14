@@ -36,3 +36,18 @@ When adding virtual network or firewalls rules, set the value of defaultAction t
 
 See [Event Hubs - Allow IP Addresses - ARM Template](https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-ip-filtering#use-resource-manager-template) for adding IP firewall rules and setting the defaultAction.   
 See [Event Hubs - Allow VNETS - ARM Template](https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-service-endpoints#use-resource-manager-template) for adding VNET firewall rules and setting the defaultAction.  
+
+## Function App VNET Integration Misconfiguration
+name: "function-app-vnet-integration-misconfiguration"
+### Description 
+Finds Function Apps integrated with a virtual network but the app settings for `WEBSITE_VNET_ROUTE_ALL` is not `1` and `WEBSITE_DNS_SERVER` is not `168.63.129.16`. 
+
+### How to Fix
+By default, your app routes only RFC1918 traffic into your VNet. If you want to route all of your outbound traffic into your VNet, then change or add the app setting WEBSITE_VNET_ROUTE_ALL to 1.  
+After your app integrates with your VNet, it uses the same DNS server that your VNet is configured with. By default, your app won't work with Azure DNS private zones. To work with Azure DNS private zones, you need to add the following app settings:
+
+1. WEBSITE_DNS_SERVER with value 168.63.129.16
+2. WEBSITE_VNET_ROUTE_ALL with value 1
+
+See [Fix in Portal](https://docs.microsoft.com/en-us/azure/azure-functions/functions-networking-options#regional-virtual-network-integration) for adding the app settings in the portal.   
+[More Information](https://docs.microsoft.com/en-us/azure/azure-functions/functions-networking-options#virtual-network-integration). 

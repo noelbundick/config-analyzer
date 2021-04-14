@@ -4,7 +4,7 @@ export const environment = {
   resourceGroup2: 'AZA_TEST_RESOURCE_GROUP_2',
   subscriptionId: 'AZA_TEST_SUBSCRIPTION_ID',
   runIntegrationTests: 'AZA_TEST_INTEGRATION',
-  keyValutId: 'AZA_TEST_KEY_VAULT_ID',
+  vmPassword: 'AZA_TEST_VM_PASSWORD',
 };
 
 // How to run the integration tests

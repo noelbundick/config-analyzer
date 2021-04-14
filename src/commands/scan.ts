@@ -135,18 +135,12 @@ export default class Scan extends Command {
         this.error('Please provide one resource group to scan');
       }
       cli.action.start('Fetching template. This may take a few moments');
-      const template = await ARMTemplateRule.getTemplate(
+      target = await ARMTemplateRule.getTarget(
         flags.scope[0],
         flags.group[0],
         new DefaultAzureCredential()
       );
       cli.action.stop();
-      target = {
-        type: RuleType.ARM,
-        subscriptionId: flags.scope[0],
-        groupName: flags.group[0],
-        template: template._response.parsedBody.template,
-      };
     } else if (flags.scope) {
       if (flags.scope.length > 1 && flags.group) {
         this.error(

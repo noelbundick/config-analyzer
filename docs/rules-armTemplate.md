@@ -9,6 +9,14 @@ ARM template rules can export an ARM template and scan it for configuration issu
 - If resources are found, they can be further filtered with further evaluations by using the `and` key
   - Child evaluations can access properties (including nested properties) of the parent resource via the `{{parent}}` variable in the `query` using [Handlebars](https://handlebarsjs.com/) syntax
   - Ex: `` starts_with(name, `{{parent.name}}`) ``
+- Some configuration settings do not come back from an exported ARM Template. For those settings, an additional evaluation can be added by using the `request` key in the top level evaluation
+  - Request evaluations have `operation` and `query` keys
+    - operation
+      - under the hood, the operation value is used to make a POST request to the Azure REST API. A url is built for each resource found after the top level and `and` queries are evaluated. 
+      - the request url becomes https://management.azure.com/subscriptions/${subscriptionId}/resourceGroups/${groupName}/providers/${resource.type}/${resource.name}/${request.operation}?api-version=${resource.apiVersion} where `request.operation` is the user supplied path.
+      - a list of API endpoints can be found at [Azure REST API Reference](https://docs.microsoft.com/en-us/rest/api/azure/)
+    - query 
+      - the JMESPATH query used to run against the API response.  
 
 ### Examples
 
@@ -43,4 +51,29 @@ Find all Storage Accounts that have Private Endpoints enabled, but have not disa
     ]
   }
 }
+```
+Example with a Request Evaluation  
+Finds Function Apps integrated with a virtual network but the app settings for WEBSITE_VNET_ROUTE_ALL is not 1 and WEBSITE_DNS_SERVER is not 168.63.129.16. 
+
+
+Since exported templated do not return the config app settings for function apps, An REST call must be made to retrive those settings. The request `query` is then used to filter the found resources from the top level evaluation and `and` evaluation against the REST response.  
+```json
+  {
+    "name": "function-app-vnet-integration-misconfiguration",
+    "description": "",
+    "type": "ARM",
+    "recommendation": "https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#function-app-vnet-integration-misconfiguration",
+    "evaluation": {
+      "query": "type == `Microsoft.Web/sites`",
+      "request": {
+        "operation": "config/appsettings/list",
+        "query": "properties.WEBSITE_DNS_SERVER != '168.63.129.16' || properties.WEBSITE_VNET_ROUTE_ALL != '1'"
+      },
+      "and": [
+        {
+          "query": "type == `Microsoft.Web/sites/virtualNetworkConnections` && starts_with(name, `{{parent.name}}/`)"
+        }
+      ]
+    }
+  }
 ```

@@ -7,6 +7,12 @@ import {BaseRule, RuleType} from '.';
 import {AzureIdentityCredentialAdapter} from '../azure';
 import {ScanResult} from '../scanner';
 
+// needed for sendRequest method
+// from @azure/core-http => https://azuresdkdocs.blob.core.windows.net/$web/javascript/azure-core-http/1.2.4/globals.html#httpmethods
+enum HttpMethods {
+  POST = 'POST',
+}
+
 export interface ARMTemplate {
   $schema: string;
   contentVersion: string;
@@ -26,6 +32,8 @@ export interface ARMTarget {
   template: ARMTemplate;
   subscriptionId: string;
   groupName: string;
+  credential: TokenCredential;
+  client: ResourceManagementClient;
 }
 
 // All evaluations contain a JMESPath query that operate on ARM resources
@@ -38,12 +46,44 @@ type AndEvaluation = BaseEvaluation & {
   and: Array<Evaluation>;
 };
 
+type RequestEvaluation = BaseEvaluation & {
+  request: {
+    operation: string;
+    query: string;
+  };
+};
+
 function isAndEvaluation(evaluation: Evaluation): evaluation is AndEvaluation {
   return (evaluation as AndEvaluation).and !== undefined;
 }
 
+function isRequestEvaluation(
+  evaluation: Evaluation
+): evaluation is RequestEvaluation {
+  return (evaluation as RequestEvaluation).request !== undefined;
+}
+
+// returns a resolved promise so that any async calls in the callback can be resolved before returning
+function mapAsync<T1, T2>(
+  array: T1[],
+  callback: (value: T1, index: number, array: T1[]) => Promise<T2>
+): Promise<T2[]> {
+  return Promise.all(array.map(callback));
+}
+
+// if the array is empty, it returns an empty array
+async function filterAsync<T>(
+  array: T[],
+  callback: (value: T, index: number, array: T[]) => Promise<boolean>
+): Promise<T[]> {
+  // creates boolean array and maintains the same index order as the original array
+  const filterMap = await mapAsync(array, callback);
+  // filters over the original array based on the filterMap array value at each index
+  return array.filter((_, index) => filterMap[index]);
+}
+
 // Evaluations may be standalone or composite
-type Evaluation = BaseEvaluation | AndEvaluation;
+type Evaluation = BaseEvaluation | AndEvaluation | RequestEvaluation;
 
 export class ARMTemplateRule implements BaseRule<ARMTarget> {
   type: RuleType.ARM;
@@ -66,23 +106,43 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
     this.recommendation = rule.recommendation;
   }
 
-  static async getTemplate(
+  static async getTarget(
     subscriptionId: string,
     groupName: string,
     credential: TokenCredential
-  ) {
+  ): Promise<ARMTarget> {
     const client = new ResourceManagementClient(
       new AzureIdentityCredentialAdapter(credential),
       subscriptionId
     );
-    return await client.resourceGroups.exportTemplate(groupName, {
+    const template = await client.resourceGroups.exportTemplate(groupName, {
       resources: ['*'],
       options: 'SkipAllParameterization',
     });
+    return {
+      subscriptionId,
+      groupName,
+      credential,
+      client,
+      template: template._response.parsedBody.template,
+      type: RuleType.ARM,
+    };
   }
 
-  execute(target: ARMTarget) {
-    const results = this.evaluate(this.evaluation, target.template);
+  async execute(target: ARMTarget) {
+    let results = this.evaluate(this.evaluation, target.template);
+    // creating constant so type guard works for isRequestEvaluaion
+    // revisit and fix this
+    const evaluation = this.evaluation;
+    // If we found resources from the first evaluations, filter those down to the ones that meet all the criteria for the request evaluation
+    if (isRequestEvaluation(evaluation)) {
+      // returns empty array if results are empty
+      results = await filterAsync(results, async resource => {
+        const response = await this.sendRequest(target, resource, evaluation);
+        return JMESPath.search(response.parsedBody, evaluation.request.query);
+      });
+    }
+
     const resourceIds = results.map(r => this.getResourceId(r, target));
     return Promise.resolve(this.toScanResult(resourceIds));
   }
@@ -113,12 +173,12 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
 
   evaluate(
     evaluation: Evaluation,
-    target: ARMTemplate,
+    template: ARMTemplate,
     parent?: ARMResource
   ): Array<ARMResource> {
     const query = this.render(evaluation.query, parent);
     const resources = JMESPath.search(
-      target.resources,
+      template.resources,
       query
     ) as Array<ARMResource>;
 
@@ -126,11 +186,40 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
     if (resources.length > 0 && isAndEvaluation(evaluation)) {
       // TODO: make this readable
       return resources.filter(resource =>
-        evaluation.and.every(r => this.evaluate(r, target, resource).length > 0)
+        evaluation.and.every(
+          r => this.evaluate(r, template, resource).length > 0
+        )
       );
     }
 
     return resources;
+  }
+
+  async sendRequest(
+    target: ARMTarget,
+    resource: ARMResource,
+    evaluation: RequestEvaluation
+  ) {
+    const token = await target.credential.getToken(
+      'https://graph.microsoft.com/.default'
+    );
+    const options = {
+      url: this.getRequestUrl(target, resource, evaluation),
+      method: HttpMethods.POST,
+      headers: {
+        Authorization: `Bearer ${token?.token}`,
+        'Content-Type': 'application/json',
+      },
+    };
+    return await target.client.sendRequest(options);
+  }
+
+  getRequestUrl(
+    target: ARMTarget,
+    resource: ARMResource,
+    evaluation: RequestEvaluation
+  ) {
+    return `https://management.azure.com/subscriptions/${target.subscriptionId}/resourceGroups/${target.groupName}/providers/${resource.type}/${resource.name}/${evaluation.request.operation}?api-version=${resource.apiVersion}`;
   }
 
   toResourceIdARMFunction(resource: ARMResource) {

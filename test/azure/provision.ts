@@ -6,11 +6,16 @@ import {
   resourceGroup2,
   subscriptionId,
   testRegion,
-  keyVaultId,
+  vmPassword,
   blobStorageAccountName,
 } from '.';
 
 export async function provisionEnvironment() {
+  await provisionStorageEnvironment();
+  await provisionFunctionAppEnvironment();
+}
+
+export async function provisionStorageEnvironment() {
   const resourceClient = new ResourceManagementClient(
     new AzureIdentityCredentialAdapter(credential),
     subscriptionId
@@ -19,9 +24,7 @@ export async function provisionEnvironment() {
   await resourceClient.resourceGroups.createOrUpdate(resourceGroup, {
     location: testRegion,
   });
-  await resourceClient.resourceGroups.createOrUpdate(resourceGroup2, {
-    location: testRegion,
-  });
+
   await resourceClient.deployments.createOrUpdate(
     resourceGroup,
     resourceGroup,
@@ -30,9 +33,6 @@ export async function provisionEnvironment() {
         mode: 'Incremental',
         template: require('./templates/azuredeploy.json'),
         parameters: {
-          resourceGroup2: {
-            value: resourceGroup2,
-          },
           location: {
             value: testRegion,
           },
@@ -40,12 +40,33 @@ export async function provisionEnvironment() {
             value: blobStorageAccountName,
           },
           adminPasswordOrKey: {
-            reference: {
-              keyVault: {
-                id: keyVaultId,
-              },
-              secretName: 'DefaultAdminPasswordSecret',
-            },
+            value: vmPassword,
+          },
+        },
+      },
+    }
+  );
+}
+
+export async function provisionFunctionAppEnvironment() {
+  const resourceClient = new ResourceManagementClient(
+    new AzureIdentityCredentialAdapter(credential),
+    subscriptionId
+  );
+
+  await resourceClient.resourceGroups.createOrUpdate(resourceGroup2, {
+    location: testRegion,
+  });
+  await resourceClient.deployments.createOrUpdate(
+    resourceGroup2,
+    resourceGroup,
+    {
+      properties: {
+        mode: 'Incremental',
+        template: require('./templates/azuredeploy-function-app.json'),
+        parameters: {
+          location: {
+            value: testRegion,
           },
         },
       },
@@ -67,6 +88,12 @@ async function main() {
   switch (args[0]) {
     case 'provision':
       await provisionEnvironment();
+      break;
+    case 'provisionFunctions':
+      await provisionFunctionAppEnvironment();
+      break;
+    case 'provisionStorage':
+      await provisionStorageEnvironment();
       break;
     case 'teardown':
       await teardownEnvironment();

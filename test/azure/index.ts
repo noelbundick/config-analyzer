@@ -34,7 +34,7 @@ export const resourceGroup2 = env
   .default(defaultResourceGroup + '-2')
   .asString();
 
-export const keyVaultId = env
-  .get(environment.keyValutId)
+export const vmPassword = env
+  .get(environment.vmPassword)
   .default('')
   .asString();

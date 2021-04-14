@@ -1,12 +1,17 @@
 import {assert} from 'chai';
 import {Scanner} from '../../src/scanner';
-import {subscriptionId} from '.';
+import {runIntegrationTests, subscriptionId} from '.';
 import {ResourceGraphTarget, RuleType} from '../../src/rules';
 import {DefaultAzureCredential} from '@azure/identity';
 
 describe('Scanner', function () {
   this.slow(5000);
   this.timeout(8000);
+  before(function () {
+    if (!runIntegrationTests) {
+      this.skip();
+    }
+  });
   it('can execute resource graph rules', async () => {
     const target: ResourceGraphTarget = {
       type: RuleType.ResourceGraph,
