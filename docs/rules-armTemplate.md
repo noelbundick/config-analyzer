@@ -77,3 +77,27 @@ Since exported templated do not return the config app settings for function apps
     }
   }
 ```
+
+*Note*
+When writing queries for ARM templates, it is important to know when to use `backticks` and when to use `single quotes`. If you are searching for an integer, then you should use `backticks`. If you are searching a string, often times you use either `single quotes` or `backticks`. However, if the property is a stringed integer `"1"` then backticks will not accurately evaluate the property. If it is not clear that the property you are searching for will come back as a string or an integer, it is suggested construct a query that checks for both options to prevent rules from being inaccurately evaluated. See the examples below for the JMESPATH behavior.
+
+``` json 
+{
+  "stringInteger": "1",
+  "string": "Hello World",
+  "integer": 1,
+}
+```
+
+Using the above JSON object:
+```
+stringInteger == '1' => true  
+stringInteger == `1` => false
+
+string == 'Hello World' => true  
+string == `Hello World` => true
+
+integer == '1' => false  
+integer == `1` => true
+
+```
