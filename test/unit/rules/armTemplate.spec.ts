@@ -1,7 +1,13 @@
 import {expect} from 'chai';
 import {resourceGroup, subscriptionId} from '../../azure';
 import {ScanResult} from '../../../src/scanner';
-import {ARMTarget, ARMTemplateRule, RuleType} from '../../../src/rules';
+import {
+  ARMResource,
+  ARMTarget,
+  ARMTemplateRule,
+  filterAsync,
+  RuleType,
+} from '../../../src/rules';
 import {ResourceManagementClient} from '@azure/arm-resources';
 import {TokenCredential} from '@azure/identity';
 
@@ -164,5 +170,11 @@ describe('ARM Template Rule', () => {
     );
     const expectedResult = `https://management.azure.com/subscriptions/${testARMTarget.subscriptionId}/resourceGroups/${testARMTarget.groupName}/providers/${template.resources[0].type}/${template.resources[0].name}/${evaluation.request.operation}?api-version=${template.resources[0].apiVersion}`;
     expect(result).to.equal(expectedResult);
+  });
+
+  it('validates the filterAsync and mapAsync Methods work with an empty array', async () => {
+    const array = new Array<ARMResource>();
+    const results = await filterAsync(array, () => Promise.resolve(false));
+    expect(results).to.deep.equal([]);
   });
 });

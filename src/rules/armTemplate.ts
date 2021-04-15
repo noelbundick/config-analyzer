@@ -63,7 +63,7 @@ function isRequestEvaluation(
   return (evaluation as RequestEvaluation).request !== undefined;
 }
 
-// returns a resolved promise so that any async calls in the callback can be resolved before returning
+// returns a resolved promise so that any async calls in the callback are completed before returning
 function mapAsync<T1, T2>(
   array: T1[],
   callback: (value: T1, index: number, array: T1[]) => Promise<T2>
@@ -72,14 +72,14 @@ function mapAsync<T1, T2>(
 }
 
 // if the array is empty, it returns an empty array
-async function filterAsync<T>(
+export async function filterAsync<T>(
   array: T[],
   callback: (value: T, index: number, array: T[]) => Promise<boolean>
 ): Promise<T[]> {
   // creates boolean array and maintains the same index order as the original array
-  const filterMap = await mapAsync(array, callback);
-  // filters over the original array based on the filterMap array value at each index
-  return array.filter((_, index) => filterMap[index]);
+  const mappedArray = await mapAsync(array, callback);
+  // filters over the original array based on the mappedArray boolean at each index
+  return array.filter((_, index) => mappedArray[index]);
 }
 
 // Evaluations may be standalone or composite
@@ -131,17 +131,23 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
 
   async execute(target: ARMTarget) {
     let results = this.evaluate(this.evaluation, target.template);
-    // creating constant so type guard works for isRequestEvaluaion
-    // revisit and fix this
-    const evaluation = this.evaluation;
-    // If we found resources from the first evaluations, filter those down to the ones that meet all the criteria for the request evaluation
-    if (isRequestEvaluation(evaluation)) {
-      // returns empty array if results are empty
-      results = await filterAsync(results, async resource => {
-        const response = await this.sendRequest(target, resource, evaluation);
-        return JMESPath.search(response.parsedBody, evaluation.request.query);
-      });
-    }
+    // if we found resources from the first evaluations, filter those down to the ones that meet all the criteria for the request evaluation
+    // if it is not a request evaluation then no-op just return true
+    results = await filterAsync(results, async resource => {
+      if (isRequestEvaluation(this.evaluation)) {
+        const response = await this.sendRequest(
+          target,
+          resource,
+          this.evaluation
+        );
+        return JMESPath.search(
+          response.parsedBody,
+          this.evaluation.request.query
+        );
+      } else {
+        return true;
+      }
+    });
 
     const resourceIds = results.map(r => this.getResourceId(r, target));
     return Promise.resolve(this.toScanResult(resourceIds));
