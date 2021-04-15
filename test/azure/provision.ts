@@ -10,16 +10,21 @@ import {
   blobStorageAccountName,
 } from '.';
 
-export async function provisionEnvironment() {
-  await provisionStorageEnvironment();
-  await provisionFunctionAppEnvironment();
-}
-
-export async function provisionStorageEnvironment() {
-  const resourceClient = new ResourceManagementClient(
+function getClient() {
+  return new ResourceManagementClient(
     new AzureIdentityCredentialAdapter(credential),
     subscriptionId
   );
+}
+
+export async function provisionEnvironment() {
+  await provisionStorageEnvironment();
+  await provisionFunctionAppEnvironment();
+  await provisionEventHubEnvironment();
+}
+
+export async function provisionStorageEnvironment() {
+  const resourceClient = getClient();
 
   await resourceClient.resourceGroups.createOrUpdate(resourceGroup, {
     location: testRegion,
@@ -49,21 +54,41 @@ export async function provisionStorageEnvironment() {
 }
 
 export async function provisionFunctionAppEnvironment() {
-  const resourceClient = new ResourceManagementClient(
-    new AzureIdentityCredentialAdapter(credential),
-    subscriptionId
-  );
+  const resourceClient = getClient();
 
   await resourceClient.resourceGroups.createOrUpdate(resourceGroup2, {
     location: testRegion,
   });
   await resourceClient.deployments.createOrUpdate(
     resourceGroup2,
-    resourceGroup,
+    `${resourceGroup}Functions`,
     {
       properties: {
         mode: 'Incremental',
         template: require('./templates/azuredeploy-function-app.json'),
+        parameters: {
+          location: {
+            value: testRegion,
+          },
+        },
+      },
+    }
+  );
+}
+
+export async function provisionEventHubEnvironment() {
+  const resourceClient = getClient();
+
+  await resourceClient.resourceGroups.createOrUpdate(resourceGroup, {
+    location: testRegion,
+  });
+  await resourceClient.deployments.createOrUpdate(
+    resourceGroup,
+    `${resourceGroup}EventHub`,
+    {
+      properties: {
+        mode: 'Incremental',
+        template: require('./templates/azuredeploy-event-hubs.json'),
         parameters: {
           location: {
             value: testRegion,
@@ -94,6 +119,9 @@ async function main() {
       break;
     case 'provisionStorage':
       await provisionStorageEnvironment();
+      break;
+    case 'provisionEventHubs':
+      await provisionEventHubEnvironment();
       break;
     case 'teardown':
       await teardownEnvironment();
