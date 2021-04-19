@@ -1,5 +1,5 @@
 {
-  "name": "aza",
+  "name": "azca",
   "version": "0.0.1",
   "description": "",
   "main": "build/src/index.js",
@@ -64,7 +64,7 @@
   },
   "oclif": {
     "commands": "./build/src/commands",
-    "bin": "aza"
+    "bin": "azca"
   },
   "pkg": {
     "scripts": "./build/src/**/*.js"
