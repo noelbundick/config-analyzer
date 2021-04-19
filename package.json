@@ -1,11 +1,12 @@
 {
   "name": "azca",
-  "version": "0.0.3",
+  "version": "0.0.6",
   "description": "",
   "main": "build/src/index.js",
   "types": "build/src/index.d.ts",
   "files": [
-    "build/src"
+    "build/src",
+    "build/rules.json"
   ],
   "bin": {
     "aza": "./bin/run"
@@ -56,8 +57,6 @@
     "@azure/identity": "^1.2.3",
     "@azure/ms-rest-js": "^2.2.3",
     "@oclif/command": "^1.8.0",
-    "@oclif/config": "^1.17.0",
-    "@oclif/errors": "^1.3.4",
     "chalk": "^4.1.0",
     "cli-ux": "^5.5.1",
     "handlebars": "^4.7.7",
