@@ -4,7 +4,7 @@ Azure Configuration Analyzer
 
 # Overview
 
-`aza` is a console app that evaluates rules against an Azure configuration to perform semantic analysis. It is capable of analyzing complex configurations that span multiple resources and helps developers with remediation by providing direct links to product documentation.
+`azca` is a console app that evaluates rules against an Azure configuration to perform semantic analysis. It is capable of analyzing complex configurations that span multiple resources and helps developers with remediation by providing direct links to product documentation.
 
 - Rule types:
   - [ARM Template](/docs/rules-armTemplate.md)
@@ -14,14 +14,14 @@ Azure Configuration Analyzer
 
 <!-- usage -->
 ```sh-session
-$ npm install -g aza
-$ aza COMMAND
+$ npm install -g azca
+$ azca COMMAND
 running command...
-$ aza (-v|--version|version)
-aza/0.0.0 linux-x64 node-v14.15.5
-$ aza --help [COMMAND]
+$ azca (-v|--version|version)
+azca/0.0.0 linux-x64 node-v14.15.5
+$ azca --help [COMMAND]
 USAGE
-  $ aza COMMAND
+  $ azca COMMAND
 ...
 ```
 <!-- usagestop -->
@@ -29,15 +29,15 @@ USAGE
 # Commands
 
 <!-- commands -->
-* [`aza scan`](#aza-scan)
+* [`azca scan`](#azca-scan)
 
-## `aza scan`
+## `azca scan`
 
 Scans Azure resources for potential configuration issues
 
 ```
 USAGE
-  $ aza scan
+  $ azca scan
 
 OPTIONS
   -f, --file=file    JSON rules file path
@@ -49,7 +49,7 @@ OPTIONS
   --debug            prints debugging logs
 
 EXAMPLE
-  $ aza scan --scope <SCOPE>
+  $ azca scan --scope <SCOPE>
        [rule-name]
            [✓ | ❌][rule-description]     
            Resources:
@@ -65,8 +65,5 @@ EXAMPLE
 
 To run the integration tests:
 
-- Configure Azure Key Vault
-  - `az keyvault create -n <VAULT_NAME> -g <RESOURCE_GROUP>`
-  - `az keyvault set --vault-name <VAULT_NAME> -n DefaultAdminPasswordSecret --value <VM_PASSWORD>`
 - Copy `.env.template` to `.env` and fill with your desired values
 - `npm test`
