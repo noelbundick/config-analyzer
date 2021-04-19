@@ -1,5 +1,5 @@
 {
-  "name": "azca",
+  "name": "aza",
   "version": "0.0.1",
   "description": "",
   "main": "build/src/index.js",
@@ -56,6 +56,7 @@
     "@azure/identity": "^1.2.3",
     "@azure/ms-rest-js": "^2.2.3",
     "@oclif/command": "^1.8.0",
+    "@oclif/errors": "^1.3.4",
     "chalk": "^4.1.0",
     "cli-ux": "^5.5.1",
     "handlebars": "^4.7.7",
@@ -63,7 +64,7 @@
   },
   "oclif": {
     "commands": "./build/src/commands",
-    "bin": "azca"
+    "bin": "aza"
   },
   "pkg": {
     "scripts": "./build/src/**/*.js"
