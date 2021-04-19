@@ -50,7 +50,7 @@ export default class ScanARM extends Scan {
         new DefaultAzureCredential()
       );
       cli.action.stop();
-      this.scan(target, flags.file);
+      await this.scan(target, flags.file);
     }
   }
 }

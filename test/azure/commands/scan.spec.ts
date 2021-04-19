@@ -30,7 +30,7 @@ describe('Scan Integration Tests', function () {
       '../test/rules.json',
     ])
     .it(
-      'runs scan --subscription [subscriptionId] -f ../test/rules.json',
+      'runs scan:rg --subscription [subscriptionId] -f ../test/rules.json',
       async ({stdout}) => {
         const scanner = new Scanner();
         await scanner.loadRulesFromFile('../test/rules.json');
@@ -52,7 +52,7 @@ describe('Scan Integration Tests', function () {
       '../test/rules.json',
     ])
     .it(
-      'runs scan -s [subscriptionId] -g [resourceGroup] -f ../test/rules.json',
+      'runs scan:rg -s [subscriptionId] -g [resourceGroup] -f ../test/rules.json',
       async ({stdout}) => {
         expect(stdout).to.contain(group1VNetId);
         expect(stdout).to.not.contain(group2VNetId);
@@ -72,7 +72,7 @@ describe('Scan Integration Tests', function () {
       '../test/rules.json',
     ])
     .it(
-      'runs scan -s [subscriptionId] -g [resourceGroup1] -g [resourceGroup2] -f ../test/rules.json',
+      'runs scan:rg -s [subscriptionId] -g [resourceGroup1] -g [resourceGroup2] -f ../test/rules.json',
       async ({stdout}) => {
         expect(stdout).to.contain(group1VNetId);
         expect(stdout).to.contain(group2VNetId);
@@ -102,7 +102,7 @@ describe('Scan Integration Tests', function () {
     .stdout()
     .command(['scan:rg', '-s', subscriptionId, '-g', resourceGroup])
     .it(
-      'should find storage accounts with a private endpoint configured but the public endpoint is still enabled',
+      'should find storage accounts with a private endpoint configured but the public endpoint is still enabled with a Resource Graph query',
       async ({stdout}) => {
         const storageId = `/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.Storage/storageAccounts/${blobStorageAccountName}`;
         expect(stdout).to.contain(storageId);

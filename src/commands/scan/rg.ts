@@ -61,6 +61,6 @@ export default class ScanResourceGraph extends Scan {
         this.warn(`Resource Group '${g}' does not exist in this subscription`);
       }
     }
-    this.scan(target, flags.file);
+    await this.scan(target, flags.file);
   }
 }
