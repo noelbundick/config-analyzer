@@ -1,6 +1,6 @@
 {
   "name": "azca",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "",
   "main": "build/src/index.js",
   "types": "build/src/index.d.ts",
@@ -56,6 +56,7 @@
     "@azure/identity": "^1.2.3",
     "@azure/ms-rest-js": "^2.2.3",
     "@oclif/command": "^1.8.0",
+    "@oclif/config": "^1.17.0",
     "@oclif/errors": "^1.3.4",
     "chalk": "^4.1.0",
     "cli-ux": "^5.5.1",
