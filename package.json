@@ -33,7 +33,6 @@
     "posttest": "npm run lint"
   },
   "devDependencies": {
-    "@azure/arm-resources": "^4.0.0",
     "@istanbuljs/nyc-config-typescript": "^1.0.1",
     "@oclif/dev-cli": "^1.26.0",
     "@oclif/test": "^1.2.8",
@@ -53,6 +52,7 @@
   },
   "dependencies": {
     "@azure/arm-resourcegraph": "^3.0.0",
+    "@azure/arm-resources": "^4.0.0",
     "@azure/identity": "^1.2.3",
     "@azure/ms-rest-js": "^2.2.3",
     "@oclif/command": "^1.8.0",
