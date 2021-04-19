@@ -29,32 +29,57 @@ USAGE
 # Commands
 
 <!-- commands -->
-* [`azca scan`](#azca-scan)
+* [`azca scan:arm`](#azca-scanarm)
+* [`azca scan:rg`](#azca-scanrg)
 
-## `azca scan`
+## `azca scan:arm`
 
-Scans Azure resources for potential configuration issues
+Scans exported ARM Templates for potential configuration issues
 
 ```
 USAGE
-  $ azca scan
+  $ azca scan:arm
 
 OPTIONS
-  -f, --file=file    JSON rules file path
-  -g, --group=group  Azure resource groups to scan
-  -h, --help         show CLI help
-  -s, --scope=scope  Azure subscription id to scan
-  -t, --template     runs rules against an exported ARM template
-  -v, --verbose      prints all results
-  --debug            prints debugging logs
+  -d, --debug                      prints debugging logs
+  -f, --file=file                  JSON rules file path
+  -g, --group=group                Azure resource groups to scan
+  -s, --subscription=subscription  Azure subscription id to scan
+  -v, --verbose                    prints all results
 
 EXAMPLE
-  $ azca scan --scope <SCOPE>
+  $ azca scan:arm --subscription <subscriptionId> --group <resourceGroupName>
        [rule-name]
            [✓ | ❌][rule-description]     
            Resources:
                    [resource-ids]
 
+       [total-passing]
+       [total-failing]
+       [total-rules-scanned]
+```
+
+## `azca scan:rg`
+
+Uses Resource Graph queries to scan Azure resources for potential configuration issues
+
+```
+USAGE
+  $ azca scan:rg
+
+OPTIONS
+  -d, --debug                      prints debugging logs
+  -f, --file=file                  JSON rules file path
+  -g, --group=group                Azure resource groups to scan
+  -s, --subscription=subscription  (required) Azure subscription id to scan
+  -v, --verbose                    prints all results
+
+EXAMPLE
+  $ azca scan:rg --subscription <subscriptionId>
+       [rule-name]
+           [✓ | ❌][rule-description]     
+           Resources:
+                   [resource-ids]
        [total-passing]
        [total-failing]
        [total-rules-scanned]

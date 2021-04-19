@@ -42,5 +42,5 @@ The application can scan Azure Resources across multiple subscriptions or a sing
 
 **CLI Usage**
 
-aza scan --scope [subscriptionId1] --scope [subscriptionId2]  
-aza scan --scope [subscriptionId] --group [resourceGroupName1] --group [resourceGroupName2]
+aza scan:rg --subscription [subscriptionId1] --subscription [subscriptionId2]  
+aza scan:rg --subscription [subscriptionId] --group [resourceGroupName1] --group [resourceGroupName2]
