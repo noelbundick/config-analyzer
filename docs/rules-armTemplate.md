@@ -101,3 +101,6 @@ integer == '1' => false
 integer == `1` => true
 
 ```
+
+**CLI Usage**
+aza scan:arm --subscription [subscriptionId] --group [resourceGroupName]

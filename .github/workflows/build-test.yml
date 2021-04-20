@@ -53,9 +53,9 @@ jobs:
         npm run package
         
         mkdir dist/linux dist/win dist/mac
-        mv dist/aza-linux dist/linux/aza
-        mv dist/aza-win.exe dist/win/aza.exe
-        mv dist/aza-macos dist/mac/aza
+        mv dist/azca-linux dist/linux/azca
+        mv dist/azca-win.exe dist/win/azca.exe
+        mv dist/azca-macos dist/mac/azca
 
     - name: Upload artifacts (Linux)
       uses: actions/upload-artifact@v2

@@ -1,11 +1,12 @@
 {
-  "name": "aza",
-  "version": "0.0.0",
+  "name": "azca",
+  "version": "0.0.7",
   "description": "",
   "main": "build/src/index.js",
   "types": "build/src/index.d.ts",
   "files": [
-    "build/src"
+    "build/src",
+    "build/rules.json"
   ],
   "bin": {
     "aza": "./bin/run"
@@ -33,7 +34,6 @@
     "posttest": "npm run lint"
   },
   "devDependencies": {
-    "@azure/arm-resources": "^4.0.0",
     "@istanbuljs/nyc-config-typescript": "^1.0.1",
     "@oclif/dev-cli": "^1.26.0",
     "@oclif/test": "^1.2.8",
@@ -53,6 +53,7 @@
   },
   "dependencies": {
     "@azure/arm-resourcegraph": "^3.0.0",
+    "@azure/arm-resources": "^4.0.0",
     "@azure/identity": "^1.2.3",
     "@azure/ms-rest-js": "^2.2.3",
     "@oclif/command": "^1.8.0",
@@ -63,7 +64,7 @@
   },
   "oclif": {
     "commands": "./build/src/commands",
-    "bin": "aza"
+    "bin": "azca"
   },
   "pkg": {
     "scripts": "./build/src/**/*.js"
