@@ -4,7 +4,7 @@ import {Target} from '../../rules';
 import {format, LogOptions} from '../../commandHelper';
 import cli from 'cli-ux';
 
-export default class ScanCommand2 extends Command {
+export default class ScanCommand extends Command {
   protected isDebugMode = false;
   protected isVerbose = false;
 
@@ -18,7 +18,6 @@ $ azca scan:arm --subscription <subscriptionId> --group <resourceGroupName>
   ];
 
   static flags = {
-    // help: flags.help({char: 'h'}),
     file: flags.string({
       char: 'f',
       description: 'JSON rules file path',
@@ -108,7 +107,7 @@ $ azca scan:arm --subscription <subscriptionId> --group <resourceGroupName>
 
   async run() {
     // oclif doesn't recognize help flag without this line.
-    this.parse(ScanCommand2);
+    this.parse(ScanCommand);
     this.error(
       'Please provide a rule type to scan. Run `$ azca scan --help` for usage'
     );
