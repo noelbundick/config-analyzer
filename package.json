@@ -1,6 +1,6 @@
 {
   "name": "azca",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "",
   "main": "build/src/index.js",
   "types": "build/src/index.d.ts",
@@ -9,7 +9,7 @@
     "build/rules.json"
   ],
   "bin": {
-    "aza": "./bin/run"
+    "azca": "./bin/run"
   },
   "license": "MIT",
   "engines": {
