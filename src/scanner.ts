@@ -28,9 +28,8 @@ export class Scanner {
     return Promise.all(results);
   }
 
-  async loadRulesFromFile(filePath = '../rules.json') {
-    const absPath = path.join(__dirname, filePath);
-    const data = await fsPromises.readFile(absPath, 'utf8');
+  async loadRulesFromFile(filePath = path.join(__dirname, '../rules.json')) {
+    const data = await fsPromises.readFile(filePath, 'utf8');
     this.rules = JSON.parse(data);
   }
 

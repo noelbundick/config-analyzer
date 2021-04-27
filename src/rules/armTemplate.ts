@@ -190,7 +190,6 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
 
     // If we found resources with the initial query, filter those down to the ones that meet all the criteria
     if (resources.length > 0 && isAndEvaluation(evaluation)) {
-      // TODO: make this readable
       return resources.filter(resource =>
         evaluation.and.every(
           r => this.evaluate(r, template, resource).length > 0
