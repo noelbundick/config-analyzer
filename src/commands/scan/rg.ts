@@ -3,6 +3,8 @@ import Scan from './index';
 import {RuleType, ResourceGraphRule, ResourceGraphTarget} from '../../rules';
 import {DefaultAzureCredential} from '@azure/identity';
 import {cli} from 'cli-ux';
+import {AzureIdentityCredentialAdapter} from '../../azure';
+import {ResourceManagementClient} from '@azure/arm-resources';
 
 export default class ScanResourceGraph extends Scan {
   static description =

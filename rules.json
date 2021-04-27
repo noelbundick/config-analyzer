@@ -3,9 +3,24 @@
     "name": "accidental-public-storage",
     "description": "Finds Storage Accounts with a Private Endpoint configured but the public endpoint is still enabled",
     "type": "ResourceGraph",
-    "query": "Resources | where type=~ 'Microsoft.Storage/storageAccounts' and isnotempty(properties.privateEndpointConnections[0]) and properties.networkAcls.defaultAction=~ 'Allow'",
+    "evaluation": {
+      "query": "Resources | where type=~ 'Microsoft.Storage/storageAccounts' and isnotempty(properties.privateEndpointConnections[0]) and properties.networkAcls.defaultAction=~ 'Allow'"
+    },
     "recommendation": "https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#accidental-public-storage"
   },
+    {
+      "name": "event-hub-test",
+      "description": "Finds Storage Accounts with a Private Endpoint configured but the public endpoint is still enabled",
+      "type": "ResourceGraph",
+      "evaluation": {
+        "query": "Resources | where type=~ 'Microsoft.EventHub/namespaces'",
+        "request": {
+          "operation": "networkRuleSets/default",
+          "query": "properties.defaultAction == `Deny`"
+        }
+      },
+      "recommendation": "https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#accidental-public-storage"
+    },
   {
     "name": "accidental-public-storage",
     "description": "Finds Storage Accounts with a Private Endpoint configured but the public endpoint is still enabled",
