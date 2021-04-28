@@ -132,7 +132,7 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
       },
     };
     let response = await resourceManagementClient.sendRequest(options);
-    // if the response returns an error because of an invalid api verison, then parse the error message to retrieve a valid one and try again
+    // if the response returns an error because the default api verison is invalid, then parse the error message to retrieve a valid one and try again
     if (
       response.status === 400 &&
       response.parsedBody.error.code === 'NoRegisteredProviderFound'
@@ -176,18 +176,18 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
     throw Error('Unable to find a valid api version');
   }
 
-  async getLatestApiVersion(
+  async getDefaultApiVersion(
     resourceId: string,
     client: ResourceManagementClient
   ) {
     const provider = this.getElementFromId('provider', resourceId);
     const resourceType = this.getElementFromId('resourceType', resourceId);
     const providerResponse = await client.providers.get(provider);
-    const apiVersions = providerResponse.resourceTypes?.find(
+    const apiVersion = providerResponse.resourceTypes?.find(
       r => r.resourceType === resourceType
-    )?.apiVersions;
-    if (apiVersions) {
-      return apiVersions[0];
+    )?.defaultApiVersion;
+    if (apiVersion) {
+      return apiVersion;
     }
     throw Error('unable to retrieve a valid api version');
   }
@@ -221,7 +221,7 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
     apiVersion?: string
   ) {
     if (!apiVersion) {
-      apiVersion = await this.getLatestApiVersion(resourceId, client);
+      apiVersion = await this.getDefaultApiVersion(resourceId, client);
     }
     if (isRequestEvaluation(this.evaluation)) {
       return `https://management.azure.com/${resourceId}/${this.evaluation.request.operation}?api-version=${apiVersion}`;

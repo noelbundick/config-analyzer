@@ -105,11 +105,12 @@ describe('Resource Graph Rule', function () {
     ]);
   });
 
-  it('can get the latest api version for a resource type', async () => {
+  it('can get the default api version for a resource type', async () => {
+    // the default api version may change, so probably not the best test. Is there another way we can test this?
     const resourceId = `subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.EventHub/namespaces/misconfigRule1`;
     const client = await testRule.getResourceManagmentClient(resourceId);
-    const apiVersion = await testRule.getLatestApiVersion(resourceId, client);
-    expect(apiVersion).to.equal('2021-01-01-preview');
+    const apiVersion = await testRule.getDefaultApiVersion(resourceId, client);
+    expect(apiVersion).to.equal('2017-04-01');
   });
 
   it('can get a Request Url with a provided api version', async () => {
@@ -127,7 +128,7 @@ describe('Resource Graph Rule', function () {
   it('can get a Request Url when an api version is not provided', async () => {
     const resourceId = `subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.EventHub/namespaces/misconfigRule1`;
     const client = await testRule.getResourceManagmentClient(resourceId);
-    const apiVersion = await testRule.getLatestApiVersion(resourceId, client);
+    const apiVersion = await testRule.getDefaultApiVersion(resourceId, client);
     const url = await testRule.getRequestUrl(resourceId, client);
     if (isRequestEvaluation(testRule.evaluation)) {
       expect(url).to.equal(
