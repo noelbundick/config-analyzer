@@ -16,6 +16,7 @@ describe('ARM Template Rule', () => {
     type: RuleType.ARM,
     name: 'test-rule',
     description: 'use for testing rule methods',
+    recommendation: 'recommendationLink',
     evaluation: {
       query:
         'type == `Microsoft.Storage/storageAccounts` && properties.networkAcls.defaultAction == `Allow`',
@@ -107,6 +108,7 @@ describe('ARM Template Rule', () => {
       description:
         "used for testing a rule with an 'and' evalutation - first eval should find a resource and the second eval excludes it from results",
       type: RuleType.ARM,
+      recommendation: 'recommendationLink',
       evaluation: {
         query:
           'type == `Microsoft.Storage/storageAccounts` && name == `storageAccountName`',
@@ -122,6 +124,7 @@ describe('ARM Template Rule', () => {
       ruleName: rule.name,
       description: rule.description,
       total: 0,
+      recommendation: rule.recommendation,
       resourceIds: [],
     };
     const resultShouldPass = await rule.execute(testARMTarget);
@@ -134,6 +137,7 @@ describe('ARM Template Rule', () => {
       description:
         "used for testing a rule with an 'and' evaluation - first eval should find a resource and should also find a resource",
       type: RuleType.ARM,
+      recommendation: 'recommendationLink',
       evaluation: {
         query:
           'type == `Microsoft.Storage/storageAccounts` && name == `storageAccountName`',
@@ -149,6 +153,7 @@ describe('ARM Template Rule', () => {
       ruleName: rule.name,
       description: rule.description,
       total: 1,
+      recommendation: rule.recommendation,
       resourceIds: [rule.getResourceId(template.resources[0], testARMTarget)],
     };
     const resultShouldPass = await rule.execute(testARMTarget);

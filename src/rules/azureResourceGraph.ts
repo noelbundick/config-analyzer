@@ -63,11 +63,10 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
     }
 
     let resourceIds = this.convertResourcesResponseToIds(response);
-
+    // after first evaluation runs, evaluate the request evalution if it exsists
     resourceIds = await filterAsync(resourceIds, async resourceId => {
       if (isRequestEvaluation(this.evaluation)) {
         const response = await this.sendRequest(target, resourceId);
-        console.log(response);
         return JMESPath.search(
           response.parsedBody,
           this.evaluation.request.query
@@ -113,11 +112,7 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
     }
   }
 
-  async sendRequest(
-    target: ResourceGraphTarget,
-    resourceId: string,
-    apiVersion?: string
-  ) {
+  async sendRequest(target: ResourceGraphTarget, resourceId: string) {
     const token = await target.credential.getToken(
       'https://graph.microsoft.com/.default'
     );
@@ -126,29 +121,29 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
     );
 
     const options = {
-      url: await this.getRequestUrl(
-        resourceId,
-        resourceManagementClient,
-        apiVersion
-      ),
+      url: await this.getRequestUrl(resourceId, resourceManagementClient),
       method: HttpMethods.GET,
       headers: {
         Authorization: `Bearer ${token?.token}`,
         'Content-Type': 'application/json',
       },
     };
-    const response = await resourceManagementClient.sendRequest(options);
+    let response = await resourceManagementClient.sendRequest(options);
+
+    // if the response returns an error because of an invalid api verison, then parse the error message to retrieve a valid one and try again
     if (
       response.status === 400 &&
       response.parsedBody.error.code === 'NoRegisteredProviderFound'
     ) {
-      if (apiVersion) {
-        throw Error('Something went wrong');
-      }
-      apiVersion = this.getApiVersionFromError(
+      const apiVersion = this.getApiVersionFromError(
         response.parsedBody.error.message
       );
-      return await this.sendRequest(target, resourceId, apiVersion);
+      options.url = await this.getRequestUrl(
+        resourceId,
+        resourceManagementClient,
+        apiVersion
+      );
+      response = await resourceManagementClient.sendRequest(options);
     }
     return response;
   }
@@ -162,7 +157,6 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
   }
 
   getApiVersionFromError(errorMessage: string) {
-    let apiVersion;
     const splitMessage = errorMessage.split('The supported api-versions are ');
     const versions = splitMessage[1];
     const regExps = [
@@ -180,18 +174,22 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
     }
 
     for (const r of regExps) {
-      apiVersion = match(r);
+      const apiVersion = match(r);
       if (apiVersion) {
         return apiVersion;
       }
     }
     throw Error('Unable to find a valid apiVersion');
   }
-  async getApiVersion(resourceId: string, client: ResourceManagementClient) {
+
+  async getLatestApiVersion(
+    resourceId: string,
+    client: ResourceManagementClient
+  ) {
     const provider = this.getElementFromId('provider', resourceId);
     const resourceType = this.getElementFromId('resourceType', resourceId);
-    const providers = await client.providers.get(provider);
-    const apiVersions = providers.resourceTypes?.find(
+    const providerResponse = await client.providers.get(provider);
+    const apiVersions = providerResponse.resourceTypes?.find(
       r => r.resourceType === resourceType
     )?.apiVersions;
     if (apiVersions) {
@@ -229,7 +227,7 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
     apiVersion?: string
   ) {
     if (!apiVersion) {
-      apiVersion = await this.getApiVersion(resourceId, client);
+      apiVersion = await this.getLatestApiVersion(resourceId, client);
     }
     if (isRequestEvaluation(this.evaluation)) {
       return `https://management.azure.com/${resourceId}/${this.evaluation.request.operation}?api-version=${apiVersion}`;

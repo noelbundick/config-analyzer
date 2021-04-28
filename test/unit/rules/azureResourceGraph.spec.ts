@@ -25,40 +25,31 @@ describe('Resource Graph Rule', () => {
   };
   const rule = new ResourceGraphRule({
     name: 'test-rule',
-    query: 'mock query',
+    evaluation: {
+      query: 'mock query',
+    },
+    recommendation: 'recommendationLink',
     description: 'Intentional bad query',
     type: RuleType.ResourceGraph,
   });
   it('can produce a scan result', () => {
-    const scanResult = rule.toScanResult(mockResourcesResponse());
+    const resourceIds = rule.convertResourcesResponseToIds(
+      mockResourcesResponse()
+    );
+    const scanResult = rule.toScanResult(resourceIds);
     expect(scanResult).to.deep.equal({
       ruleName: rule.name,
       description: rule.description,
       total: 1,
-      resourceIds: ['mockResourceId'],
-    });
-  });
-  it('can produce a scan result wtih a documentation link', () => {
-    const rule = new ResourceGraphRule({
-      name: 'test-rule',
-      query: 'mock query',
-      description: 'Intentional bad query',
-      recommendation: 'testLink',
-      type: RuleType.ResourceGraph,
-    });
-    const scanResult = rule.toScanResult(mockResourcesResponse());
-    expect(scanResult).to.deep.equal({
-      ruleName: rule.name,
-      description: rule.description,
       recommendation: rule.recommendation,
-      total: 1,
       resourceIds: ['mockResourceId'],
     });
   });
   it("should throw an errow if the 'id' column is not returned from Resource Graph", () => {
     const resourcesResponse = mockResourcesResponse();
     resourcesResponse.data.columns = [];
-    const iThrowError = () => rule.toScanResult(resourcesResponse);
+    const iThrowError = () =>
+      rule.convertResourcesResponseToIds(resourcesResponse);
     expect(iThrowError).to.throw(
       Error,
       'Id column was not returned from Azure Resource Graph'
@@ -67,7 +58,10 @@ describe('Resource Graph Rule', () => {
   it('can modify a query to target resource groups', () => {
     const rule = new ResourceGraphRule({
       name: 'test-rule',
-      query: "Resources | where type =~ 'Microsoft.Network/virtualNetworks'",
+      evaluation: {
+        query: "Resources | where type =~ 'Microsoft.Network/virtualNetworks'",
+      },
+      recommendation: 'recommendationLink',
       description: 'Intentional bad query',
       type: RuleType.ResourceGraph,
     });
@@ -80,7 +74,10 @@ describe('Resource Graph Rule', () => {
   it('should throw an error when modfiying an invalid query', () => {
     const rule = new ResourceGraphRule({
       name: 'test-rule',
-      query: "where type =~ 'Microsoft.Network/virtualNetworks'",
+      evaluation: {
+        query: "where type =~ 'Microsoft.Network/virtualNetworks'",
+      },
+      recommendation: 'recommendationLink',
       description: 'Does not include the inital table name',
       type: RuleType.ResourceGraph,
     });
