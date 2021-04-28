@@ -3,6 +3,7 @@ import {HttpHeadersLike, WebResourceLike} from '@azure/ms-rest-js';
 import {expect} from 'chai';
 
 import {ResourceGraphRule, RuleType} from '../../../src/rules';
+import {resourceGroup, subscriptionId} from '../../azure';
 
 describe('Resource Graph Rule', () => {
   const mockResourcesResponse = (): ResourceGraphModels.ResourcesResponse => {
@@ -85,5 +86,29 @@ describe('Resource Graph Rule', () => {
     expect(() => rule.getQueryByGroups(groupNames)).to.throw(
       "Invalid Query. All queries must start with '<tableName> |'"
     );
+  });
+
+  it('throws an error when it cannot retrive a valid api version', async () => {
+    const errorMessage =
+      "No registered resource provider found for location 'eastus2' and API version '2020-02-01' for type 'namespaces'. The supported api-versions are ', , , ,'. The supported locations are 'australiaeast, australiasoutheast, centralus, eastus, eastus2, westus, westus2, northcentralus, southcentralus, westcentralus, eastasia, southeastasia, brazilsouth, japaneast, japanwest, northeurope, westeurope, centralindia, southindia, westindia, canadacentral, canadaeast, ukwest, uksouth, koreacentral, koreasouth, francecentral, southafricanorth, uaenorth, australiacentral, switzerlandnorth, germanywestcentral, norwayeast, jioindiawest'.";
+    const iThrowError = () => rule.getApiVersionFromError(errorMessage);
+    expect(iThrowError).throw(Error, 'Unable to find a valid api version');
+  });
+
+  it('can get a valid api version from a HttpOperationResponse error response', async () => {
+    const errorMessage =
+      "No registered resource provider found for location 'eastus2' and API version '2014-08-01' for type 'namespaces'. The supported api-versions are '2014-09-01, 2015-08-01, 2017-04-01, 2018-01-01-preview, 2021-01-01-preview'. The supported locations are 'australiaeast, australiasoutheast, centralus, eastus, eastus2, westus, westus2, northcentralus, southcentralus, westcentralus, eastasia, southeastasia, brazilsouth, japaneast, japanwest, northeurope, westeurope, centralindia, southindia, westindia, canadacentral, canadaeast, ukwest, uksouth, koreacentral, koreasouth, francecentral, southafricanorth, uaenorth, australiacentral, switzerlandnorth, germanywestcentral, norwayeast, jioindiawest'.";
+    const apiVersions = rule.getApiVersionFromError(errorMessage);
+    expect(apiVersions).to.equal('2021-01-01-preview');
+  });
+
+  it('can get the provider, subscription id, and resource type From a resource id', () => {
+    const resourceId = `subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.EventHub/namespaces/misconfigRule1`;
+    const subscription = rule.getElementFromId('subscription', resourceId);
+    const provider = rule.getElementFromId('provider', resourceId);
+    const resourceType = rule.getElementFromId('resourceType', resourceId);
+    expect(subscription).to.equal(subscriptionId);
+    expect(provider).to.equal('Microsoft.EventHub');
+    expect(resourceType).to.equal('namespaces');
   });
 });

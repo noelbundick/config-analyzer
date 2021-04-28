@@ -110,31 +110,7 @@ describe('Resource Graph Rule', function () {
     expect(apiVersion).to.equal('2021-01-01-preview');
   });
 
-  it('can get a valid api version from a HttpOperationResponse error response', async () => {
-    const errorMessage =
-      "No registered resource provider found for location 'eastus2' and API version '1' for type 'namespaces'. The supported api-versions are '2014-09-01, 2015-08-01, 2017-04-01, 2018-01-01-preview, 2021-01-01-preview'. The supported locations are 'australiaeast, australiasoutheast, centralus, eastus, eastus2, westus, westus2, northcentralus, southcentralus, westcentralus, eastasia, southeastasia, brazilsouth, japaneast, japanwest, northeurope, westeurope, centralindia, southindia, westindia, canadacentral, canadaeast, ukwest, uksouth, koreacentral, koreasouth, francecentral, southafricanorth, uaenorth, australiacentral, switzerlandnorth, germanywestcentral, norwayeast, jioindiawest'.";
-    const apiVersions = await testRule.getApiVersionFromError(errorMessage);
-    expect(apiVersions).to.equal('2018-01-01-preview');
-  });
-
-  it('throws an error when it cannot retrive a valid api version', async () => {
-    const errorMessage =
-      "No registered resource provider found for location 'eastus2' and API version '2020-02-01' for type 'namespaces'. The supported api-versions are ', , , ,'. The supported locations are 'australiaeast, australiasoutheast, centralus, eastus, eastus2, westus, westus2, northcentralus, southcentralus, westcentralus, eastasia, southeastasia, brazilsouth, japaneast, japanwest, northeurope, westeurope, centralindia, southindia, westindia, canadacentral, canadaeast, ukwest, uksouth, koreacentral, koreasouth, francecentral, southafricanorth, uaenorth, australiacentral, switzerlandnorth, germanywestcentral, norwayeast, jioindiawest'.";
-    const iThrowError = () => testRule.getApiVersionFromError(errorMessage);
-    expect(iThrowError).throw(Error, 'Unable to find a valid apiVersion');
-  });
-
-  it('can getElementFromId', () => {
-    const resourceId = `subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.EventHub/namespaces/misconfigRule1`;
-    const subscription = testRule.getElementFromId('subscription', resourceId);
-    const provider = testRule.getElementFromId('provider', resourceId);
-    const resourceType = testRule.getElementFromId('resourceType', resourceId);
-    expect(subscription).to.equal(subscriptionId);
-    expect(provider).to.equal('Microsoft.EventHub');
-    expect(resourceType).to.equal('namespaces');
-  });
-
-  it('can get a Request Url with a provided apiVersion', async () => {
+  it('can get a Request Url with a provided api version', async () => {
     const resourceId = `subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.EventHub/namespaces/misconfigRule1`;
     const client = await testRule.getResourceManagmentClient(resourceId);
     const apiVersion = '2018-01-01-preview';
@@ -146,7 +122,7 @@ describe('Resource Graph Rule', function () {
     }
   });
 
-  it('can get a Request Url when an apiVersion is not provided', async () => {
+  it('can get a Request Url when an api version is not provided', async () => {
     const resourceId = `subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.EventHub/namespaces/misconfigRule1`;
     const client = await testRule.getResourceManagmentClient(resourceId);
     const apiVersion = await testRule.getLatestApiVersion(resourceId, client);

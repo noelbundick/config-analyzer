@@ -1,17 +1,18 @@
 import {ResourceGraphModels} from '@azure/arm-resourcegraph';
 import {ResourceManagementClient} from '@azure/arm-resources';
 import {DefaultAzureCredential, TokenCredential} from '@azure/identity';
+import JMESPath = require('jmespath');
+
 import {
   BaseRule,
   RuleType,
   Evaluation,
   isRequestEvaluation,
   HttpMethods,
+  filterAsync,
 } from '.';
 import {AzureClient, AzureIdentityCredentialAdapter} from '../azure';
 import {ScanResult} from '../scanner';
-import {filterAsync} from './armTemplate';
-import JMESPath = require('jmespath');
 
 export interface ResourceGraphTarget {
   type: RuleType.ResourceGraph;
@@ -119,7 +120,6 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
     const resourceManagementClient = await this.getResourceManagmentClient(
       resourceId
     );
-
     const options = {
       url: await this.getRequestUrl(resourceId, resourceManagementClient),
       method: HttpMethods.GET,
@@ -129,7 +129,6 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
       },
     };
     let response = await resourceManagementClient.sendRequest(options);
-
     // if the response returns an error because of an invalid api verison, then parse the error message to retrieve a valid one and try again
     if (
       response.status === 400 &&
@@ -157,29 +156,21 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
   }
 
   getApiVersionFromError(errorMessage: string) {
+    // splits message so the initial api version that failed is not included in the regex match.
     const splitMessage = errorMessage.split('The supported api-versions are ');
     const versions = splitMessage[1];
     const regExps = [
-      new RegExp(/\d\d\d\d-\d\d-\d\d-preview/),
-      new RegExp(/\d\d\d\d-\d\d-\d\d/),
+      new RegExp(/\d\d\d\d-\d\d-\d\d-preview/g),
+      new RegExp(/\d\d\d\d-\d\d-\d\d/g),
     ];
-
-    function match(regex: RegExp) {
-      const match = versions.match(regex);
-      if (match) {
-        return match[0];
-      } else {
-        return null;
-      }
-    }
-
     for (const r of regExps) {
-      const apiVersion = match(r);
-      if (apiVersion) {
-        return apiVersion;
+      // first looks for any preview api versions, then looks for latest if preview is not found.
+      const apiVersions = versions.match(r);
+      if (apiVersions) {
+        return apiVersions[apiVersions.length - 1];
       }
     }
-    throw Error('Unable to find a valid apiVersion');
+    throw Error('Unable to find a valid api version');
   }
 
   async getLatestApiVersion(
@@ -195,7 +186,7 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
     if (apiVersions) {
       return apiVersions[0];
     }
-    throw Error('unable to retrieve a valid Api Version');
+    throw Error('unable to retrieve a valid api version');
   }
 
   getElementFromId(
@@ -232,8 +223,7 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
     if (isRequestEvaluation(this.evaluation)) {
       return `https://management.azure.com/${resourceId}/${this.evaluation.request.operation}?api-version=${apiVersion}`;
     }
-    // update error message
-    throw Error('There was a problem with the request');
+    throw Error('The request evaluation was not provided');
   }
 
   convertResourcesResponseToIds(

@@ -52,6 +52,25 @@ export function isRequestEvaluation(
   return (evaluation as RequestEvaluation).request !== undefined;
 }
 
+// returns a resolved promise so that any async calls in the callback are completed before returning
+function mapAsync<T1, T2>(
+  array: T1[],
+  callback: (value: T1, index: number, array: T1[]) => Promise<T2>
+): Promise<T2[]> {
+  return Promise.all(array.map(callback));
+}
+
+// if the array is empty, it returns an empty array
+export async function filterAsync<T>(
+  array: T[],
+  callback: (value: T, index: number, array: T[]) => Promise<boolean>
+): Promise<T[]> {
+  // creates boolean array and maintains the same index order as the original array
+  const mappedArray = await mapAsync(array, callback);
+  // filters over the original array based on the mappedArray boolean at each index
+  return array.filter((_, index) => mappedArray[index]);
+}
+
 export type Evaluation = BaseEvaluation | AndEvaluation | RequestEvaluation;
 export type Rule = ResourceGraphRule | ARMTemplateRule;
 export type Target = ResourceGraphTarget | ARMTarget;
