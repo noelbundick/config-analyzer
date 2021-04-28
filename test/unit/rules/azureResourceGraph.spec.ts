@@ -3,7 +3,6 @@ import {HttpHeadersLike, WebResourceLike} from '@azure/ms-rest-js';
 import {expect} from 'chai';
 
 import {ResourceGraphRule, RuleType} from '../../../src/rules';
-import {resourceGroup, subscriptionId} from '../../azure';
 
 describe('Resource Graph Rule', () => {
   const mockResourcesResponse = (): ResourceGraphModels.ResourcesResponse => {
@@ -103,11 +102,13 @@ describe('Resource Graph Rule', () => {
   });
 
   it('can get the provider, subscription id, and resource type From a resource id', () => {
-    const resourceId = `subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.EventHub/namespaces/misconfigRule1`;
+    const testSubId = '0000-000-000-000';
+    const testResourceGroup = 'aza-demo';
+    const resourceId = `subscriptions/${testSubId}/resourceGroups/${testResourceGroup}/providers/Microsoft.EventHub/namespaces/misconfigRule1`;
     const subscription = rule.getElementFromId('subscription', resourceId);
     const provider = rule.getElementFromId('provider', resourceId);
     const resourceType = rule.getElementFromId('resourceType', resourceId);
-    expect(subscription).to.equal(subscriptionId);
+    expect(subscription).to.equal(testSubId);
     expect(provider).to.equal('Microsoft.EventHub');
     expect(resourceType).to.equal('namespaces');
   });
