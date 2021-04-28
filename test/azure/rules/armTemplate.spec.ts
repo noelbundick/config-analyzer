@@ -1,5 +1,5 @@
 import {expect} from 'chai';
-import {ARMTemplateRule, RuleType} from '../../../src/rules';
+import {ARMTemplateRule, HttpMethods, RuleType} from '../../../src/rules';
 import {
   credential,
   resourceGroup,
@@ -73,6 +73,7 @@ describe('ARM Template Rule', function () {
         query: 'type == `Microsoft.Web/sites`',
         request: {
           operation: 'config/appsettings/list',
+          httpMethod: HttpMethods.POST,
           query:
             "properties.WEBSITE_DNS_SERVER != '168.63.129.16' || properties.WEBSITE_VNET_ROUTE_ALL != '1'",
         },

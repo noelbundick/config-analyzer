@@ -6,6 +6,7 @@ import {
   ARMTarget,
   ARMTemplateRule,
   filterAsync,
+  HttpMethods,
   RuleType,
 } from '../../../src/rules';
 import {ResourceManagementClient} from '@azure/arm-resources';
@@ -165,6 +166,7 @@ describe('ARM Template Rule', () => {
       query: '',
       request: {
         query: '',
+        httpMethod: HttpMethods.POST,
         operation: 'path/for/operation',
       },
     };
