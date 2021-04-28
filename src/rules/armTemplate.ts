@@ -157,12 +157,15 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
     resource: ARMResource,
     evaluation: RequestEvaluation
   ) {
+    if (!isRequestEvaluation(this.evaluation)) {
+      throw Error('A valid request evalutation was not found');
+    }
     const token = await target.credential.getToken(
       'https://graph.microsoft.com/.default'
     );
     const options = {
       url: this.getRequestUrl(target, resource, evaluation),
-      method: HttpMethods.POST,
+      method: this.evaluation.request.httpMethod as HttpMethods,
       headers: {
         Authorization: `Bearer ${token?.token}`,
         'Content-Type': 'application/json',

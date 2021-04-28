@@ -36,6 +36,7 @@ type AndEvaluation = BaseEvaluation & {
 export type RequestEvaluation = BaseEvaluation & {
   request: {
     operation: string;
+    httpMethod: HttpMethods;
     query: string;
   };
 };

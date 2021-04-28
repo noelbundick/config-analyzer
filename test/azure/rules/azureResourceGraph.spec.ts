@@ -1,5 +1,6 @@
 import {expect} from 'chai';
 import {
+  HttpMethods,
   isRequestEvaluation,
   ResourceGraphRule,
   ResourceGraphTarget,
@@ -30,6 +31,7 @@ describe('Resource Graph Rule', function () {
       query: "Resources | where type=~ 'Microsoft.EventHub/namespaces'",
       request: {
         operation: 'networkRuleSets/default',
+        httpMethod: HttpMethods.GET,
         query:
           'properties.defaultAction == `Deny` && length(properties.ipRules) == `0` && length(properties.virtualNetworkRules) == `0`',
       },

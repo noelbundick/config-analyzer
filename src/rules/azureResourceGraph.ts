@@ -114,6 +114,9 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
   }
 
   async sendRequest(target: ResourceGraphTarget, resourceId: string) {
+    if (!isRequestEvaluation(this.evaluation)) {
+      throw Error('A valid request evalutation was not found');
+    }
     const token = await target.credential.getToken(
       'https://graph.microsoft.com/.default'
     );
@@ -122,7 +125,7 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
     );
     const options = {
       url: await this.getRequestUrl(resourceId, resourceManagementClient),
-      method: HttpMethods.GET,
+      method: this.evaluation.request.httpMethod as HttpMethods,
       headers: {
         Authorization: `Bearer ${token?.token}`,
         'Content-Type': 'application/json',
