@@ -166,11 +166,9 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
       ruleName: this.name,
       description: this.description,
       total: resourceIds.length,
+      recommendation: this.recommendation,
       resourceIds: resourceIds,
     };
-    if (this.recommendation) {
-      scanResult.recommendation = this.recommendation;
-    }
     return scanResult;
   }
 
