@@ -9,7 +9,7 @@
     "recommendation": "https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#accidental-public-storage"
   },
   {
-    "name": "event-hub-test",
+    "name": "event-hubs-not-locked-down-1",
     "description": "Finds Storage Accounts with a Private Endpoint configured but the public endpoint is still enabled",
     "type": "ResourceGraph",
     "evaluation": {
@@ -18,6 +18,20 @@
         "operation": "networkRuleSets/default",
         "httpMethod": "GET",
         "query": "properties.defaultAction == `Deny` && length(properties.ipRules) == `0` && length(properties.virtualNetworkRules) == `0`"
+      }
+    },
+    "recommendation": "https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#accidental-public-storage"
+  },
+  {
+    "name": "event-hubs-not-locked-down-2",
+    "description": "Finds Storage Accounts with a Private Endpoint configured but the public endpoint is still enabled",
+    "type": "ResourceGraph",
+    "evaluation": {
+      "query": "Resources | where type=~ 'Microsoft.EventHub/namespaces'",
+      "request": {
+        "operation": "networkRuleSets/default",
+        "httpMethod": "GET",
+        "query": "properties.defaultAction == `Allow` && (length(properties.ipRules) > `0` || length(properties.virtualNetworkRules) > `0`)"
       }
     },
     "recommendation": "https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#accidental-public-storage"
