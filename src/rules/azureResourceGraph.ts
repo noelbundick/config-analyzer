@@ -10,6 +10,7 @@ import {
   isRequestEvaluation,
   HttpMethods,
   filterAsync,
+  RequestEvaluation,
 } from '.';
 import {AzureClient, AzureIdentityCredentialAdapter} from '../azure';
 import {ScanResult} from '../scanner';
@@ -124,7 +125,11 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
       resourceId
     );
     const options = {
-      url: await this.getRequestUrl(resourceId, resourceManagementClient),
+      url: await this.getRequestUrl(
+        resourceId,
+        this.evaluation,
+        resourceManagementClient
+      ),
       method: this.evaluation.request.httpMethod as HttpMethods,
       headers: {
         Authorization: `Bearer ${token?.token}`,
@@ -142,6 +147,7 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
       );
       options.url = await this.getRequestUrl(
         resourceId,
+        this.evaluation,
         resourceManagementClient,
         apiVersion
       );
@@ -186,16 +192,17 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
     const apiVersion = providerResponse.resourceTypes?.find(
       r => r.resourceType === resourceType
     )?.defaultApiVersion;
-    if (apiVersion) {
-      return apiVersion;
-    }
-    throw Error('unable to retrieve a valid api version');
+    return apiVersion;
   }
 
   getElementFromId(
     element: 'subscription' | 'provider' | 'resourceType',
     resourceId: string
   ) {
+    // resource id format:
+    // /subscriptions/0000-0000-0000-0000/resourceGroups/aza-demo/providers/Microsoft.EventHubs/namspaces/vnet
+    //              /   subscription    /              / resGrp /         /    provider     /  resourceType / resourceName
+    // splits the id and returns the element
     const splitId = resourceId.split('/');
     switch (element) {
       case 'subscription': {
@@ -210,23 +217,23 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
       }
       case 'resourceType': {
         const resourceTypeIdx = splitId.findIndex(el => el === 'providers') + 2;
-        return splitId[resourceTypeIdx];
+        const resourceTypeArr = splitId.slice(resourceTypeIdx, -1);
+        return resourceTypeArr.join('/');
       }
     }
   }
 
   async getRequestUrl(
     resourceId: string,
+    evaluation: RequestEvaluation,
     client: ResourceManagementClient,
     apiVersion?: string
   ) {
+    const fullResourceId = `${resourceId}/${evaluation.request.operation}`;
     if (!apiVersion) {
       apiVersion = await this.getDefaultApiVersion(resourceId, client);
     }
-    if (isRequestEvaluation(this.evaluation)) {
-      return `https://management.azure.com/${resourceId}/${this.evaluation.request.operation}?api-version=${apiVersion}`;
-    }
-    throw Error('The request evaluation was not provided');
+    return `https://management.azure.com/${fullResourceId}?api-version=${apiVersion}`;
   }
 
   convertResourcesResponseToIds(

@@ -2,6 +2,7 @@ import {expect} from 'chai';
 import {
   HttpMethods,
   isRequestEvaluation,
+  RequestEvaluation,
   ResourceGraphRule,
   ResourceGraphTarget,
   RuleType,
@@ -117,7 +118,12 @@ describe('Resource Graph Rule', function () {
     const resourceId = `subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.EventHub/namespaces/misconfigRule1`;
     const client = await testRule.getResourceManagmentClient(resourceId);
     const apiVersion = '2018-01-01-preview';
-    const url = await testRule.getRequestUrl(resourceId, client, apiVersion);
+    const url = await testRule.getRequestUrl(
+      resourceId,
+      testRule.evaluation as RequestEvaluation,
+      client,
+      apiVersion
+    );
     if (isRequestEvaluation(testRule.evaluation)) {
       expect(url).to.equal(
         `https://management.azure.com/${resourceId}/${testRule.evaluation.request.operation}?api-version=${apiVersion}`
@@ -129,11 +135,17 @@ describe('Resource Graph Rule', function () {
     const resourceId = `subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.EventHub/namespaces/misconfigRule1`;
     const client = await testRule.getResourceManagmentClient(resourceId);
     const apiVersion = await testRule.getDefaultApiVersion(resourceId, client);
-    const url = await testRule.getRequestUrl(resourceId, client);
+    const url = await testRule.getRequestUrl(
+      resourceId,
+      testRule.evaluation as RequestEvaluation,
+      client
+    );
     if (isRequestEvaluation(testRule.evaluation)) {
       expect(url).to.equal(
         `https://management.azure.com/${resourceId}/${testRule.evaluation.request.operation}?api-version=${apiVersion}`
       );
+    } else {
+      throw Error('The test rule is not a request evaluation');
     }
   });
 
