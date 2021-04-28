@@ -11,7 +11,7 @@ import {Scanner} from '../../../src/scanner';
 
 describe('Scan Integration Tests', function () {
   this.slow(3000);
-  this.timeout(5000);
+  this.timeout(20000);
   before(function () {
     if (!runIntegrationTests) {
       this.skip();
@@ -27,13 +27,13 @@ describe('Scan Integration Tests', function () {
       '--subscription',
       subscriptionId,
       '-f',
-      '../test/rules.json',
+      './test/rules.json',
     ])
     .it(
-      'runs scan:rg --subscription [subscriptionId] -f ../test/rules.json',
+      'runs scan:rg --subscription [subscriptionId] -f ./test/rules.json',
       async ({stdout}) => {
         const scanner = new Scanner();
-        await scanner.loadRulesFromFile('../test/rules.json');
+        await scanner.loadRulesFromFile('./test/rules.json');
         const totalResourceGraphRules = scanner.rules.filter(
           r => r.type === RuleType.ResourceGraph
         ).length;
@@ -49,10 +49,10 @@ describe('Scan Integration Tests', function () {
       '-g',
       resourceGroup,
       '-f',
-      '../test/rules.json',
+      './test/rules.json',
     ])
     .it(
-      'runs scan:rg -s [subscriptionId] -g [resourceGroup] -f ../test/rules.json',
+      'runs scan:rg -s [subscriptionId] -g [resourceGroup] -f ./test/rules.json',
       async ({stdout}) => {
         expect(stdout).to.contain(group1VNetId);
         expect(stdout).to.not.contain(group2VNetId);
@@ -69,10 +69,10 @@ describe('Scan Integration Tests', function () {
       '-g',
       resourceGroup2,
       '-f',
-      '../test/rules.json',
+      './test/rules.json',
     ])
     .it(
-      'runs scan:rg -s [subscriptionId] -g [resourceGroup1] -g [resourceGroup2] -f ../test/rules.json',
+      'runs scan:rg -s [subscriptionId] -g [resourceGroup1] -g [resourceGroup2] -f ./test/rules.json',
       async ({stdout}) => {
         expect(stdout).to.contain(group1VNetId);
         expect(stdout).to.contain(group2VNetId);
@@ -89,7 +89,7 @@ describe('Scan Integration Tests', function () {
       '-g',
       resourceGroup,
       '-f',
-      '../test/rules.json',
+      './test/rules.json',
     ])
     .it(
       'should warn user of nonexisting resource groups in the subscription',
@@ -100,7 +100,15 @@ describe('Scan Integration Tests', function () {
     );
   test
     .stdout()
-    .command(['scan:rg', '-s', subscriptionId, '-g', resourceGroup])
+    .command([
+      'scan:rg',
+      '-s',
+      subscriptionId,
+      '-g',
+      resourceGroup,
+      '-f',
+      './test/rules.json',
+    ])
     .it(
       'should find storage accounts with a private endpoint configured but the public endpoint is still enabled with a Resource Graph query',
       async ({stdout}) => {

@@ -24,6 +24,7 @@ describe('ARM Template Rule', function () {
       name: 'accidental-public-storage',
       description:
         'Finds Storage Accounts with a Private Endpoint configured but the public endpoint is still enabled',
+      recommendation: 'recommendationLink',
       type: RuleType.ARM,
       evaluation: {
         query:
@@ -47,6 +48,7 @@ describe('ARM Template Rule', function () {
     const expectedResult = {
       ruleName: rule.name,
       description: rule.description,
+      recommendation: rule.recommendation,
       total: 1,
       resourceIds: [
         `subscriptions/${target.subscriptionId}/resourceGroups/${target.groupName}/providers/Microsoft.Storage/storageAccounts/${storageAccountName}`,

@@ -19,7 +19,7 @@ describe('Scanner', function () {
       credential: new DefaultAzureCredential(),
     };
     const scanner = new Scanner();
-    await scanner.loadRulesFromFile('../test/rules.json');
+    await scanner.loadRulesFromFile('./test/rules.json');
     const totalResourceGraphRules = scanner.rules.filter(
       r => r.type === RuleType.ResourceGraph
     ).length;
