@@ -18,7 +18,7 @@ import {DefaultAzureCredential} from '@azure/identity';
 
 describe('Resource Graph Rule', function () {
   this.slow(6000);
-  this.timeout(10000);
+  this.timeout(15000);
 
   before(function () {
     if (!runIntegrationTests) {
@@ -168,8 +168,12 @@ describe('Resource Graph Rule', function () {
         'https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#event-hubs-not-locked-down-1',
     });
     const resourceId = `/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.EventHub/namespaces/misconfigRule1`;
+    const shouldNotFindResourceId1 = `/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.EventHub/namespaces/azaTestNamespace`;
+    const shouldNotFindResourceId2 = `/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.EventHub/namespaces/misconfigRule2`;
     const result = await rule.execute(testTarget);
     expect(result.resourceIds).to.include(resourceId);
+    expect(result.resourceIds).to.not.include(shouldNotFindResourceId1);
+    expect(result.resourceIds).to.not.include(shouldNotFindResourceId2);
   });
 
   it('tests the Event Hub is not locked down rule 2', async () => {
@@ -191,7 +195,11 @@ describe('Resource Graph Rule', function () {
         'https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#event-hubs-not-locked-down-2',
     });
     const resourceId = `/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.EventHub/namespaces/misconfigRule2`;
+    const shouldNotFindResourceId1 = `/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.EventHub/namespaces/azaTestNamespace`;
+    const shouldNotFindResourceId2 = `/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.EventHub/namespaces/misconfigRule1`;
     const result = await rule.execute(testTarget);
     expect(result.resourceIds).to.include(resourceId);
+    expect(result.resourceIds).to.not.include(shouldNotFindResourceId1);
+    expect(result.resourceIds).to.not.include(shouldNotFindResourceId2);
   });
 });
