@@ -64,7 +64,7 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
     }
 
     let resourceIds = this.convertResourcesResponseToIds(response);
-    // after first evaluation runs, evaluate the request evalution if it exsists
+    // after first evaluation runs, evaluate the request evalution if it exists
     resourceIds = await filterAsync(resourceIds, async resourceId => {
       if (isRequestEvaluation(this.evaluation)) {
         const response = await this.sendRequest(target, resourceId);
