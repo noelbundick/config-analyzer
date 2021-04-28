@@ -135,4 +135,50 @@ describe('Resource Graph Rule', function () {
       );
     }
   });
+
+  it('tests the Event Hub is not locked down rule 1', async () => {
+    const rule = new ResourceGraphRule({
+      name: 'event-hubs-not-locked-down-1',
+      description:
+        'Finds Event Hubs with a network rule set having zero IP and virtual network rules and the defaultAction is Deny.',
+      type: RuleType.ResourceGraph,
+      evaluation: {
+        query: "Resources | where type=~ 'Microsoft.EventHub/namespaces'",
+        request: {
+          operation: 'networkRuleSets/default',
+          httpMethod: HttpMethods.GET,
+          query:
+            'properties.defaultAction == `Deny` && length(properties.ipRules) == `0` && length(properties.virtualNetworkRules) == `0`',
+        },
+      },
+      recommendation:
+        'https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#event-hubs-not-locked-down-1',
+    });
+    const resourceId = `/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.EventHub/namespaces/misconfigRule1`;
+    const result = await rule.execute(testTarget);
+    expect(result.resourceIds).to.include(resourceId);
+  });
+
+  it('tests the Event Hub is not locked down rule 2', async () => {
+    const rule = new ResourceGraphRule({
+      name: 'event-hubs-not-locked-down-1',
+      description:
+        "Finds Event Hubs with a network rule set having one or more IP and virtual network rules for the namespace but the defaultAction is not set to 'Deny'",
+      type: RuleType.ResourceGraph,
+      evaluation: {
+        query: "Resources | where type=~ 'Microsoft.EventHub/namespaces'",
+        request: {
+          operation: 'networkRuleSets/default',
+          httpMethod: HttpMethods.GET,
+          query:
+            'properties.defaultAction == `Allow` && (length(properties.ipRules) > `0` || length(properties.virtualNetworkRules) > `0`)',
+        },
+      },
+      recommendation:
+        'https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#event-hubs-not-locked-down-2',
+    });
+    const resourceId = `/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.EventHub/namespaces/misconfigRule2`;
+    const result = await rule.execute(testTarget);
+    expect(result.resourceIds).to.include(resourceId);
+  });
 });
