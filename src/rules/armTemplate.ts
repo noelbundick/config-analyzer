@@ -7,11 +7,12 @@ import {
   BaseRule,
   RuleType,
   Evaluation,
-  RequestEvaluation,
   isRequestEvaluation,
   isAndEvaluation,
   HttpMethods,
   filterAsync,
+  RequestEvaluationObject,
+  everyAsync,
 } from '.';
 import {AzureIdentityCredentialAdapter} from '../azure';
 import {ScanResult} from '../scanner';
@@ -89,15 +90,10 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
     // if it is not a request evaluation then no-op just return true
     results = await filterAsync(results, async resource => {
       if (isRequestEvaluation(this.evaluation)) {
-        const response = await this.sendRequest(
-          target,
-          resource,
-          this.evaluation
-        );
-        return JMESPath.search(
-          response.parsedBody,
-          this.evaluation.request.query
-        );
+        return await everyAsync(this.evaluation.request, async r => {
+          const response = await this.sendRequest(target, resource, r);
+          return JMESPath.search(response.parsedBody, r.query);
+        });
       } else {
         return true;
       }
@@ -155,7 +151,7 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
   async sendRequest(
     target: ARMTarget,
     resource: ARMResource,
-    evaluation: RequestEvaluation
+    request: RequestEvaluationObject
   ) {
     if (!isRequestEvaluation(this.evaluation)) {
       throw Error('A valid request evalutation was not found');
@@ -164,8 +160,8 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
       'https://graph.microsoft.com/.default'
     );
     const options = {
-      url: this.getRequestUrl(target, resource, evaluation),
-      method: this.evaluation.request.httpMethod as HttpMethods,
+      url: this.getRequestUrl(target, resource, request),
+      method: request.httpMethod as HttpMethods,
       headers: {
         Authorization: `Bearer ${token?.token}`,
         'Content-Type': 'application/json',
@@ -177,9 +173,9 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
   getRequestUrl(
     target: ARMTarget,
     resource: ARMResource,
-    evaluation: RequestEvaluation
+    request: RequestEvaluationObject
   ) {
-    return `https://management.azure.com/subscriptions/${target.subscriptionId}/resourceGroups/${target.groupName}/providers/${resource.type}/${resource.name}/${evaluation.request.operation}?api-version=${resource.apiVersion}`;
+    return `https://management.azure.com/subscriptions/${target.subscriptionId}/resourceGroups/${target.groupName}/providers/${resource.type}/${resource.name}/${request.operation}?api-version=${resource.apiVersion}`;
   }
 
   toResourceIdARMFunction(resource: ARMResource) {

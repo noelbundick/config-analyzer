@@ -34,12 +34,18 @@ type AndEvaluation = BaseEvaluation & {
 };
 
 export type RequestEvaluation = BaseEvaluation & {
-  request: {
-    operation: string;
-    httpMethod: HttpMethods;
-    query: string;
-  };
+  request: Array<RequestEvaluationObject>;
 };
+
+export type RequestEvaluationObject = {
+  operation: string;
+  httpMethod: HttpMethods;
+  query: string | QueryOption.EXISTS;
+};
+
+export enum QueryOption {
+  EXISTS = 'exists',
+}
 
 export function isAndEvaluation(
   evaluation: Evaluation
@@ -70,6 +76,16 @@ export async function filterAsync<T>(
   const mappedArray = await mapAsync(array, callback);
   // filters over the original array based on the mappedArray boolean at each index
   return array.filter((_, index) => mappedArray[index]);
+}
+
+export async function everyAsync<T>(
+  arr: T[],
+  predicate: {(e: T): Promise<boolean>}
+) {
+  for (const e of arr) {
+    if (!(await predicate(e))) return false;
+  }
+  return true;
 }
 
 export type Evaluation = BaseEvaluation | AndEvaluation | RequestEvaluation;

@@ -2,6 +2,7 @@ import {expect} from 'chai';
 import {
   HttpMethods,
   isRequestEvaluation,
+  RequestEvaluationObject,
   ResourceGraphRule,
   ResourceGraphTarget,
   RuleType,
@@ -29,12 +30,14 @@ describe('Resource Graph Rule', function () {
     name: 'test-rule',
     evaluation: {
       query: "Resources | where type=~ 'Microsoft.EventHub/namespaces'",
-      request: {
-        operation: 'networkRuleSets/default',
-        httpMethod: HttpMethods.GET,
-        query:
-          'properties.defaultAction == `Deny` && length(properties.ipRules) == `0` && length(properties.virtualNetworkRules) == `0`',
-      },
+      request: [
+        {
+          operation: 'networkRuleSets/default',
+          httpMethod: HttpMethods.GET,
+          query:
+            'properties.defaultAction == `Deny` && length(properties.ipRules) == `0` && length(properties.virtualNetworkRules) == `0`',
+        },
+      ],
     },
     recommendation: 'recommendationLink',
     description: 'Test Rule',
@@ -96,8 +99,15 @@ describe('Resource Graph Rule', function () {
   });
 
   it('can send a http request with a target and resource Id', async () => {
+    if (!isRequestEvaluation(testRule.evaluation)) {
+      throw Error('Invalid request evalaution');
+    }
     const resourceId = `/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.EventHub/namespaces/misconfigRule1`;
-    const result = await testRule.sendRequest(testTarget, resourceId);
+    const result = await testRule.sendRequest(
+      testTarget,
+      resourceId,
+      testRule.evaluation.request[0] as RequestEvaluationObject
+    );
     expect(result.parsedBody.properties).to.include.keys([
       'defaultAction',
       'ipRules',
@@ -114,25 +124,40 @@ describe('Resource Graph Rule', function () {
   });
 
   it('can get a Request Url with a provided api version', async () => {
+    if (!isRequestEvaluation(testRule.evaluation)) {
+      throw Error('Invalid request evalaution');
+    }
     const resourceId = `/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.EventHub/namespaces/misconfigRule1`;
     const client = await testRule.getResourceManagmentClient(resourceId);
     const apiVersion = '2018-01-01-preview';
-    const url = await testRule.getRequestUrl(resourceId, client, apiVersion);
+    const url = await testRule.getRequestUrl(
+      resourceId,
+      client,
+      testRule.evaluation.request[0] as RequestEvaluationObject,
+      apiVersion
+    );
     if (isRequestEvaluation(testRule.evaluation)) {
       expect(url).to.equal(
-        `https://management.azure.com/${resourceId}/${testRule.evaluation.request.operation}?api-version=${apiVersion}`
+        `https://management.azure.com/${resourceId}/${testRule.evaluation.request[0].operation}?api-version=${apiVersion}`
       );
     }
   });
 
   it('can get a Request Url when an api version is not provided', async () => {
+    if (!isRequestEvaluation(testRule.evaluation)) {
+      throw Error('Invalid request evalaution');
+    }
     const resourceId = `/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.EventHub/namespaces/misconfigRule1`;
     const client = await testRule.getResourceManagmentClient(resourceId);
     const apiVersion = await testRule.getDefaultApiVersion(resourceId, client);
-    const url = await testRule.getRequestUrl(resourceId, client);
+    const url = await testRule.getRequestUrl(
+      resourceId,
+      client,
+      testRule.evaluation.request[0] as RequestEvaluationObject
+    );
     if (isRequestEvaluation(testRule.evaluation)) {
       expect(url).to.equal(
-        `https://management.azure.com/${resourceId}/${testRule.evaluation.request.operation}?api-version=${apiVersion}`
+        `https://management.azure.com/${resourceId}/${testRule.evaluation.request[0].operation}?api-version=${apiVersion}`
       );
     } else {
       throw Error('The test rule is not a request evaluation');
@@ -147,12 +172,14 @@ describe('Resource Graph Rule', function () {
       type: RuleType.ResourceGraph,
       evaluation: {
         query: "Resources | where type=~ 'Microsoft.EventHub/namespaces'",
-        request: {
-          operation: 'networkRuleSets/default',
-          httpMethod: HttpMethods.GET,
-          query:
-            'properties.defaultAction == `Deny` && length(properties.ipRules) == `0` && length(properties.virtualNetworkRules) == `0`',
-        },
+        request: [
+          {
+            operation: 'networkRuleSets/default',
+            httpMethod: HttpMethods.GET,
+            query:
+              'properties.defaultAction == `Deny` && length(properties.ipRules) == `0` && length(properties.virtualNetworkRules) == `0`',
+          },
+        ],
       },
       recommendation:
         'https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#event-hubs-not-locked-down-1',
@@ -174,12 +201,14 @@ describe('Resource Graph Rule', function () {
       type: RuleType.ResourceGraph,
       evaluation: {
         query: "Resources | where type=~ 'Microsoft.EventHub/namespaces'",
-        request: {
-          operation: 'networkRuleSets/default',
-          httpMethod: HttpMethods.GET,
-          query:
-            'properties.defaultAction == `Allow` && (length(properties.ipRules) > `0` || length(properties.virtualNetworkRules) > `0`)',
-        },
+        request: [
+          {
+            operation: 'networkRuleSets/default',
+            httpMethod: HttpMethods.GET,
+            query:
+              'properties.defaultAction == `Allow` && (length(properties.ipRules) > `0` || length(properties.virtualNetworkRules) > `0`)',
+          },
+        ],
       },
       recommendation:
         'https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#event-hubs-not-locked-down-2',

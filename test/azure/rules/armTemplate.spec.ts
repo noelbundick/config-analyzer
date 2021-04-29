@@ -68,15 +68,17 @@ describe('ARM Template Rule', function () {
       description: '',
       type: RuleType.ARM,
       recommendation:
-        'https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#event-hubs-not-locked-down-1',
+        'https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#function-app-vnet-integration-misconfiguration',
       evaluation: {
         query: 'type == `Microsoft.Web/sites`',
-        request: {
-          operation: 'config/appsettings/list',
-          httpMethod: HttpMethods.POST,
-          query:
-            "properties.WEBSITE_DNS_SERVER != '168.63.129.16' || properties.WEBSITE_VNET_ROUTE_ALL != '1'",
-        },
+        request: [
+          {
+            operation: 'config/appsettings/list',
+            httpMethod: HttpMethods.POST,
+            query:
+              "properties.WEBSITE_DNS_SERVER != '168.63.129.16' || properties.WEBSITE_VNET_ROUTE_ALL != '1'",
+          },
+        ],
         and: [
           {
             query:

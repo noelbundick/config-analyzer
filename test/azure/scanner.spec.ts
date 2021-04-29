@@ -3,10 +3,11 @@ import {Scanner} from '../../src/scanner';
 import {runIntegrationTests, subscriptionId} from '.';
 import {ResourceGraphTarget, RuleType} from '../../src/rules';
 import {DefaultAzureCredential} from '@azure/identity';
+import {getTestRules} from '..';
 
 describe('Scanner', function () {
   this.slow(5000);
-  this.timeout(8000);
+  this.timeout(15000);
   before(function () {
     if (!runIntegrationTests) {
       this.skip();
@@ -19,11 +20,11 @@ describe('Scanner', function () {
       credential: new DefaultAzureCredential(),
     };
     const scanner = new Scanner();
-    await scanner.loadRulesFromFile('./test/rules.json');
-    const totalResourceGraphRules = scanner.rules.filter(
+    const rules = await getTestRules();
+    const totalResourceGraphRules = rules.filter(
       r => r.type === RuleType.ResourceGraph
     ).length;
-    const rgResults = await scanner.scan(target);
+    const rgResults = await scanner.scan(target, './test/rules.json');
     assert.equal(rgResults.length, totalResourceGraphRules);
     rgResults.forEach(r => {
       assert.containsAllKeys(r, [

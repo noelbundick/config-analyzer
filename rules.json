@@ -14,11 +14,11 @@
     "type": "ResourceGraph",
     "evaluation": {
       "query": "Resources | where type=~ 'Microsoft.EventHub/namespaces'",
-      "request": {
+      "request": [{
         "operation": "networkRuleSets/default",
         "httpMethod": "GET",
         "query": "properties.defaultAction == `Deny` && length(properties.ipRules) == `0` && length(properties.virtualNetworkRules) == `0`"
-      }
+      }]
     },
     "recommendation": "https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#event-hubs-not-locked-down-1"
   },
@@ -28,13 +28,34 @@
     "type": "ResourceGraph",
     "evaluation": {
       "query": "Resources | where type=~ 'Microsoft.EventHub/namespaces'",
-      "request": {
+      "request": [{
         "operation": "networkRuleSets/default",
         "httpMethod": "GET",
         "query": "properties.defaultAction == `Allow` && (length(properties.ipRules) > `0` || length(properties.virtualNetworkRules) > `0`)"
-      }
+      }]
     },
     "recommendation": "https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#event-hubs-not-locked-down-2"
+  },
+  {
+    "name": "function-app-vnet-integration-misconfiguration",
+    "description": "Finds Function Apps integrated with a VNET but the app settings are not properly configured",
+    "type": "ResourceGraph",
+    "recommendation": "https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#function-app-vnet-integration-misconfiguration",
+    "evaluation": {
+      "query": "Resources | where type =~ 'Microsoft.Web/sites' and kind =~ 'functionapp'",
+      "request": [
+        {
+          "operation": "virtualNetworkConnections",
+          "httpMethod": "GET",
+          "query": "exists"
+        },
+        {
+        "operation": "config/appsettings/list",
+        "httpMethod": "POST",
+        "query": "properties.WEBSITE_DNS_SERVER != '168.63.129.16' || properties.WEBSITE_VNET_ROUTE_ALL != '1'"
+      }
+    ]
+    }
   },
   {
     "name": "accidental-public-storage",
@@ -75,11 +96,11 @@
     "recommendation": "https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#function-app-vnet-integration-misconfiguration",
     "evaluation": {
       "query": "type == 'Microsoft.Web/sites' && kind == 'functionapp'",
-      "request": {
+      "request": [{
         "operation": "config/appsettings/list",
         "httpMethod": "POST",
         "query": "properties.WEBSITE_DNS_SERVER != '168.63.129.16' || properties.WEBSITE_VNET_ROUTE_ALL != '1'"
-      },
+      }],
       "and": [
         {
           "query": "type == 'Microsoft.Web/sites/virtualNetworkConnections' && starts_with(name, '{{parent.name}}/')"

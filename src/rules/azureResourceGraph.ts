@@ -10,6 +10,9 @@ import {
   isRequestEvaluation,
   HttpMethods,
   filterAsync,
+  everyAsync,
+  RequestEvaluationObject,
+  QueryOption,
 } from '.';
 import {AzureClient, AzureIdentityCredentialAdapter} from '../azure';
 import {ScanResult} from '../scanner';
@@ -64,14 +67,18 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
     }
 
     let resourceIds = this.convertResourcesResponseToIds(response);
+
     // after first evaluation runs, evaluate the request evalution if it exists
-    resourceIds = await filterAsync(resourceIds, async resourceId => {
+    resourceIds = await filterAsync(resourceIds, async resource => {
       if (isRequestEvaluation(this.evaluation)) {
-        const response = await this.sendRequest(target, resourceId);
-        return JMESPath.search(
-          response.parsedBody,
-          this.evaluation.request.query
-        );
+        return await everyAsync(this.evaluation.request, async r => {
+          const response = await this.sendRequest(target, resource, r);
+          if (r.query === QueryOption.EXISTS) {
+            return response.parsedBody.length > 0;
+          } else {
+            return JMESPath.search(response.parsedBody, r.query);
+          }
+        });
       } else {
         return true;
       }
@@ -113,7 +120,11 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
     }
   }
 
-  async sendRequest(target: ResourceGraphTarget, resourceId: string) {
+  async sendRequest(
+    target: ResourceGraphTarget,
+    resourceId: string,
+    request: RequestEvaluationObject
+  ) {
     if (!isRequestEvaluation(this.evaluation)) {
       throw Error('A valid request evaluation was not found');
     }
@@ -124,8 +135,12 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
       resourceId
     );
     const options = {
-      url: await this.getRequestUrl(resourceId, resourceManagementClient),
-      method: this.evaluation.request.httpMethod as HttpMethods,
+      url: await this.getRequestUrl(
+        resourceId,
+        resourceManagementClient,
+        request
+      ),
+      method: request.httpMethod as HttpMethods,
       headers: {
         Authorization: `Bearer ${token?.token}`,
         'Content-Type': 'application/json',
@@ -143,6 +158,7 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
       options.url = await this.getRequestUrl(
         resourceId,
         resourceManagementClient,
+        request,
         apiVersion
       );
       response = await resourceManagementClient.sendRequest(options);
@@ -164,7 +180,7 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
     const versions = splitMessage[1];
     const apiVersions = versions.match(/\d\d\d\d-\d\d-\d\d(-preview)?/g);
     if (apiVersions) {
-      return apiVersions[apiVersions.length - 1];
+      return apiVersions.sort()[apiVersions.length - 1];
     }
     throw Error('Unable to find a valid api version');
   }
@@ -188,7 +204,7 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
   ) {
     if (
       !resourceId.match(
-        /^(\/subscriptions\/.*\/resourceGroups\/.*\/\providers\/.*\/.*)/
+        /^(\/subscriptions\/.*\/resourceGroups\/.*\/providers\/.*\/.*)/
       )
     ) {
       throw Error('Invalid resource id');
@@ -216,12 +232,10 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
   async getRequestUrl(
     resourceId: string,
     client: ResourceManagementClient,
+    request: RequestEvaluationObject,
     apiVersion?: string
   ) {
-    if (!isRequestEvaluation(this.evaluation)) {
-      throw Error('There was a problem with the request evaluation');
-    }
-    const fullResourceId = `${resourceId}/${this.evaluation.request.operation}`;
+    const fullResourceId = `${resourceId}/${request.operation}`;
     if (!apiVersion) {
       apiVersion = await this.getDefaultApiVersion(resourceId, client);
     }
