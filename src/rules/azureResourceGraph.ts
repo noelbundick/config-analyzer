@@ -168,16 +168,9 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
     // splits message so the initial api version that failed is not included in the regex match.
     const splitMessage = errorMessage.split('The supported api-versions are ');
     const versions = splitMessage[1];
-    const regExps = [
-      new RegExp(/\d\d\d\d-\d\d-\d\d-preview/g),
-      new RegExp(/\d\d\d\d-\d\d-\d\d/g),
-    ];
-    for (const r of regExps) {
-      // first looks for any preview api versions, then looks for latest if preview is not found.
-      const apiVersions = versions.match(r);
-      if (apiVersions) {
-        return apiVersions[apiVersions.length - 1];
-      }
+    const apiVersions = versions.match(/\d\d\d\d-\d\d-\d\d(-preview)?/g);
+    if (apiVersions) {
+      return apiVersions[apiVersions.length - 1];
     }
     throw Error('Unable to find a valid api version');
   }
@@ -199,31 +192,34 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
     element: 'subscription' | 'provider' | 'resourceType',
     resourceId: string
   ) {
-    // resource id format:
-    // /subscriptions/0000-0000-0000-0000/resourceGroups/aza-demo/providers/Microsoft.EventHubs/namspaces/vnet
-    //              /   subscription    /              / resGrp /         /    provider     /  resourceType / resourceName
+    if (
+      !resourceId.match(
+        /^(\/subscriptions\/.*\/resourceGroups\/.*\/\providers\/.*\/.*)/
+      )
+    ) {
+      throw Error('Invalid resource id');
+    }
     // splits the id and returns the element
     const splitId = resourceId.split('/');
     switch (element) {
       case 'subscription': {
-        const subscriptionsIdx =
-          splitId.findIndex(el => el === 'subscriptions') + 1;
-        return splitId[subscriptionsIdx];
+        const subscriptionsIdx = splitId.findIndex(
+          el => el === 'subscriptions'
+        );
+        return splitId[subscriptionsIdx + 1];
       }
       case 'provider': {
-        const providerNamespaceIdx =
-          splitId.findIndex(el => el === 'providers') + 1;
-        return splitId[providerNamespaceIdx];
+        const providersIdx = splitId.findIndex(el => el === 'providers');
+        return splitId[providersIdx + 1];
       }
       case 'resourceType': {
-        const resourceTypeIdx = splitId.findIndex(el => el === 'providers') + 2;
-        const resourceTypeArr = splitId.slice(resourceTypeIdx, -1);
-        return resourceTypeArr.join('/');
+        const providersIdx = splitId.findIndex(el => el === 'providers');
+        return splitId[providersIdx + 2];
       }
     }
   }
 
-  async getRequestUrl(
+  async getRequestUrl<T>(
     resourceId: string,
     evaluation: RequestEvaluation,
     client: ResourceManagementClient,

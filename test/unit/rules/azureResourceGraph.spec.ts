@@ -103,8 +103,7 @@ describe('Resource Graph Rule', () => {
 
   it('can get the provider, subscription id, and resource type From a resource id', () => {
     const testSubId = '0000-000-000-000';
-    const testResourceGroup = 'aza-demo';
-    const resourceId = `subscriptions/${testSubId}/resourceGroups/${testResourceGroup}/providers/Microsoft.EventHub/namespaces/misconfigRule1`;
+    const resourceId = `/subscriptions/${testSubId}/resourceGroups/aza-demo/providers/Microsoft.EventHub/namespaces/misconfigRule1`;
     const subscription = rule.getElementFromId('subscription', resourceId);
     const provider = rule.getElementFromId('provider', resourceId);
     const resourceType = rule.getElementFromId('resourceType', resourceId);
