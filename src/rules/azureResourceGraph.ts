@@ -125,11 +125,7 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
       resourceId
     );
     const options = {
-      url: await this.getRequestUrl(
-        resourceId,
-        this.evaluation,
-        resourceManagementClient
-      ),
+      url: await this.getRequestUrl(resourceId, resourceManagementClient),
       method: this.evaluation.request.httpMethod as HttpMethods,
       headers: {
         Authorization: `Bearer ${token?.token}`,
@@ -147,7 +143,6 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
       );
       options.url = await this.getRequestUrl(
         resourceId,
-        this.evaluation,
         resourceManagementClient,
         apiVersion
       );
@@ -221,11 +216,13 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
 
   async getRequestUrl(
     resourceId: string,
-    evaluation: RequestEvaluation,
     client: ResourceManagementClient,
     apiVersion?: string
   ) {
-    const fullResourceId = `${resourceId}/${evaluation.request.operation}`;
+    if (!isRequestEvaluation(this.evaluation)) {
+      throw Error('There was a problem with the request evaluation');
+    }
+    const fullResourceId = `${resourceId}/${this.evaluation.request.operation}`;
     if (!apiVersion) {
       apiVersion = await this.getDefaultApiVersion(resourceId, client);
     }
