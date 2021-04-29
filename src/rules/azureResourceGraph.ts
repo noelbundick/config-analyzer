@@ -10,7 +10,6 @@ import {
   isRequestEvaluation,
   HttpMethods,
   filterAsync,
-  RequestEvaluation,
 } from '.';
 import {AzureClient, AzureIdentityCredentialAdapter} from '../azure';
 import {ScanResult} from '../scanner';
@@ -116,7 +115,7 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
 
   async sendRequest(target: ResourceGraphTarget, resourceId: string) {
     if (!isRequestEvaluation(this.evaluation)) {
-      throw Error('A valid request evalutation was not found');
+      throw Error('A valid request evaluation was not found');
     }
     const token = await target.credential.getToken(
       'https://graph.microsoft.com/.default'

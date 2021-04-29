@@ -2,7 +2,6 @@ import {expect} from 'chai';
 import {
   HttpMethods,
   isRequestEvaluation,
-  RequestEvaluation,
   ResourceGraphRule,
   ResourceGraphTarget,
   RuleType,
