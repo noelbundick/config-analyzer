@@ -221,4 +221,37 @@ describe('Resource Graph Rule', function () {
     expect(result.resourceIds).to.not.include(shouldNotFindResourceId1);
     expect(result.resourceIds).to.not.include(shouldNotFindResourceId2);
   });
+
+  it('tests the Function app rule', async () => {
+    const rule = new ResourceGraphRule({
+      name: 'function-app-vnet-integration-misconfiguration',
+      description:
+        'Finds Function Apps integrated with a VNET but the app settings are not properly configured',
+      type: RuleType.ResourceGraph,
+      recommendation:
+        'https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#function-app-vnet-integration-misconfiguration',
+      evaluation: {
+        query:
+          "Resources | where type =~ 'Microsoft.Web/sites' and kind =~ 'functionapp'",
+        request: [
+          {
+            operation: 'virtualNetworkConnections',
+            httpMethod: HttpMethods.GET,
+            query: 'exists',
+          },
+          {
+            operation: 'config/appsettings/list',
+            httpMethod: HttpMethods.POST,
+            query:
+              "properties.WEBSITE_DNS_SERVER != '168.63.129.16' || properties.WEBSITE_VNET_ROUTE_ALL != '1'",
+          },
+        ],
+      },
+    });
+    const resourceId = `/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup2}/providers/Microsoft.Web/sites/azamisconfigfunc`;
+    const shouldNotFindResourceId = `/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup2}/providers/Microsoft.Web/sites/azagoodfunc`;
+    const result = await rule.execute(testTarget);
+    expect(result.resourceIds).to.include(resourceId);
+    expect(result.resourceIds).to.not.include(shouldNotFindResourceId);
+  });
 });
