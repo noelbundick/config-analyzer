@@ -219,7 +219,7 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
     }
   }
 
-  async getRequestUrl<T>(
+  async getRequestUrl(
     resourceId: string,
     evaluation: RequestEvaluation,
     client: ResourceManagementClient,
