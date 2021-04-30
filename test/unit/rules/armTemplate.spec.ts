@@ -6,6 +6,8 @@ import {
   ARMTarget,
   ARMTemplateRule,
   filterAsync,
+  HttpMethods,
+  RequestEvaluationObject,
   RuleType,
 } from '../../../src/rules';
 import {ResourceManagementClient} from '@azure/arm-resources';
@@ -16,6 +18,7 @@ describe('ARM Template Rule', () => {
     type: RuleType.ARM,
     name: 'test-rule',
     description: 'use for testing rule methods',
+    recommendation: 'recommendationLink',
     evaluation: {
       query:
         'type == `Microsoft.Storage/storageAccounts` && properties.networkAcls.defaultAction == `Allow`',
@@ -107,6 +110,7 @@ describe('ARM Template Rule', () => {
       description:
         "used for testing a rule with an 'and' evalutation - first eval should find a resource and the second eval excludes it from results",
       type: RuleType.ARM,
+      recommendation: 'recommendationLink',
       evaluation: {
         query:
           'type == `Microsoft.Storage/storageAccounts` && name == `storageAccountName`',
@@ -122,6 +126,7 @@ describe('ARM Template Rule', () => {
       ruleName: rule.name,
       description: rule.description,
       total: 0,
+      recommendation: rule.recommendation,
       resourceIds: [],
     };
     const resultShouldPass = await rule.execute(testARMTarget);
@@ -134,6 +139,7 @@ describe('ARM Template Rule', () => {
       description:
         "used for testing a rule with an 'and' evaluation - first eval should find a resource and should also find a resource",
       type: RuleType.ARM,
+      recommendation: 'recommendationLink',
       evaluation: {
         query:
           'type == `Microsoft.Storage/storageAccounts` && name == `storageAccountName`',
@@ -149,6 +155,7 @@ describe('ARM Template Rule', () => {
       ruleName: rule.name,
       description: rule.description,
       total: 1,
+      recommendation: rule.recommendation,
       resourceIds: [rule.getResourceId(template.resources[0], testARMTarget)],
     };
     const resultShouldPass = await rule.execute(testARMTarget);
@@ -158,17 +165,20 @@ describe('ARM Template Rule', () => {
   it('can build a request Url for the sendRequest method', () => {
     const evaluation = {
       query: '',
-      request: {
-        query: '',
-        operation: 'path/for/operation',
-      },
+      request: [
+        {
+          query: '',
+          httpMethod: HttpMethods.POST,
+          operation: 'path/for/operation',
+        },
+      ],
     };
     const result = rule.getRequestUrl(
       testARMTarget,
       template.resources[0],
-      evaluation
+      evaluation.request[0] as RequestEvaluationObject
     );
-    const expectedResult = `https://management.azure.com/subscriptions/${testARMTarget.subscriptionId}/resourceGroups/${testARMTarget.groupName}/providers/${template.resources[0].type}/${template.resources[0].name}/${evaluation.request.operation}?api-version=${template.resources[0].apiVersion}`;
+    const expectedResult = `https://management.azure.com/subscriptions/${testARMTarget.subscriptionId}/resourceGroups/${testARMTarget.groupName}/providers/${template.resources[0].type}/${template.resources[0].name}/${evaluation.request[0].operation}?api-version=${template.resources[0].apiVersion}`;
     expect(result).to.equal(expectedResult);
   });
 

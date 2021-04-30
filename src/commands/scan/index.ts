@@ -98,9 +98,8 @@ $ azca scan:arm --subscription <subscriptionId> --group <resourceGroupName>
 
   async scan(target: Target, rulesFile: string | undefined) {
     const scanner = new Scanner();
-    await scanner.loadRulesFromFile(rulesFile);
     cli.action.start('Scanning');
-    const results = await scanner.scan(target);
+    const results = await scanner.scan(target, rulesFile);
     cli.action.stop();
     this.print(results);
   }

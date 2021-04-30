@@ -1,5 +1,5 @@
 import {expect} from 'chai';
-import {ARMTemplateRule, RuleType} from '../../../src/rules';
+import {ARMTemplateRule, HttpMethods, RuleType} from '../../../src/rules';
 import {
   credential,
   resourceGroup,
@@ -24,6 +24,7 @@ describe('ARM Template Rule', function () {
       name: 'accidental-public-storage',
       description:
         'Finds Storage Accounts with a Private Endpoint configured but the public endpoint is still enabled',
+      recommendation: 'recommendationLink',
       type: RuleType.ARM,
       evaluation: {
         query:
@@ -47,6 +48,7 @@ describe('ARM Template Rule', function () {
     const expectedResult = {
       ruleName: rule.name,
       description: rule.description,
+      recommendation: rule.recommendation,
       total: 1,
       resourceIds: [
         `subscriptions/${target.subscriptionId}/resourceGroups/${target.groupName}/providers/Microsoft.Storage/storageAccounts/${storageAccountName}`,
@@ -66,14 +68,17 @@ describe('ARM Template Rule', function () {
       description: '',
       type: RuleType.ARM,
       recommendation:
-        'https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#event-hubs-not-locked-down-1',
+        'https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#function-app-vnet-integration-misconfiguration',
       evaluation: {
         query: 'type == `Microsoft.Web/sites`',
-        request: {
-          operation: 'config/appsettings/list',
-          query:
-            "properties.WEBSITE_DNS_SERVER != '168.63.129.16' || properties.WEBSITE_VNET_ROUTE_ALL != '1'",
-        },
+        request: [
+          {
+            operation: 'config/appsettings/list',
+            httpMethod: HttpMethods.POST,
+            query:
+              "properties.WEBSITE_DNS_SERVER != '168.63.129.16' || properties.WEBSITE_VNET_ROUTE_ALL != '1'",
+          },
+        ],
         and: [
           {
             query:

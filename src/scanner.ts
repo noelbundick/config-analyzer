@@ -19,18 +19,18 @@ export interface ScanResult {
 }
 
 export class Scanner {
-  rules: Rule[] = [];
-
-  async scan(target: Target) {
-    if (!this.rules.length) await this.loadRulesFromFile();
-    const filteredRules = this.rules.filter(r => r.type === target.type);
+  async scan(target: Target, filePath?: string) {
+    const rules = await this.getRulesFromFile(filePath);
+    const filteredRules = rules.filter(r => r.type === target.type);
     const results = this.execute(filteredRules, target);
     return Promise.all(results);
   }
 
-  async loadRulesFromFile(filePath = path.join(__dirname, '../rules.json')) {
+  async getRulesFromFile(
+    filePath = path.join(__dirname, '../rules.json')
+  ): Promise<Rule[]> {
     const data = await fsPromises.readFile(filePath, 'utf8');
-    this.rules = JSON.parse(data);
+    return JSON.parse(data);
   }
 
   execute(rules: Rule[], target: Target) {

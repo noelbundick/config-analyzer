@@ -3,13 +3,28 @@
     "name": "bad-query",
     "description": "Should return no results",
     "type": "ResourceGraph",
-    "query": "Resources | where type =~ 'Microsoft.Network/virtualNetworks2'"
+    "recommendation": "recommendationLink",
+    "evaluation": {
+      "query": "Resources | where type =~ 'Microsoft.Network/virtualNetworks2'"
+    }
   },
   {
     "name": "get-vnets",
     "description": "Gets all vnets in a subscription",
     "type": "ResourceGraph",
-    "query": "Resources | where type =~ 'Microsoft.Network/virtualNetworks'"
+    "recommendation": "recommendationLink",
+    "evaluation": {
+      "query": "Resources | where type =~ 'Microsoft.Network/virtualNetworks'"
+    }
+  },
+  {
+    "name": "accidental-public-storage",
+    "description": "Finds Storage Accounts with a Private Endpoint configured but the public endpoint is still enabled",
+    "type": "ResourceGraph",
+    "evaluation": {
+      "query": "Resources | where type=~ 'Microsoft.Storage/storageAccounts' and isnotempty(properties.privateEndpointConnections[0]) and properties.networkAcls.defaultAction=~ 'Allow'"
+    },
+    "recommendation": "https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#accidental-public-storage"
   },
   {
     "name": "dummy-rule-1",

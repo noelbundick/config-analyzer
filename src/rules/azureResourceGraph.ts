@@ -1,7 +1,20 @@
 import {ResourceGraphModels} from '@azure/arm-resourcegraph';
-import {TokenCredential} from '@azure/identity';
-import {BaseRule, RuleType} from '.';
-import {AzureClient} from '../azure';
+import {ResourceManagementClient} from '@azure/arm-resources';
+import {DefaultAzureCredential, TokenCredential} from '@azure/identity';
+import JMESPath = require('jmespath');
+
+import {
+  BaseRule,
+  RuleType,
+  Evaluation,
+  isRequestEvaluation,
+  HttpMethods,
+  filterAsync,
+  everyAsync,
+  RequestEvaluationObject,
+  QueryOption,
+} from '.';
+import {AzureClient, AzureIdentityCredentialAdapter} from '../azure';
 import {ScanResult} from '../scanner';
 
 export interface ResourceGraphTarget {
@@ -20,20 +33,20 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
   type: RuleType.ResourceGraph;
   name: string;
   description: string;
-  query: string;
-  recommendation?: string;
+  evaluation: Evaluation;
+  recommendation: string;
 
   constructor(rule: {
     type: RuleType.ResourceGraph;
     name: string;
     description: string;
-    query: string;
-    recommendation?: string;
+    evaluation: Evaluation;
+    recommendation: string;
   }) {
     this.type = rule.type;
     this.name = rule.name;
     this.description = rule.description;
-    this.query = rule.query;
+    this.evaluation = rule.evaluation;
     this.recommendation = rule.recommendation;
   }
 
@@ -48,11 +61,29 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
       );
     } else {
       response = await client.queryResources(
-        this.query,
+        this.evaluation.query,
         target.subscriptionIds
       );
     }
-    return this.toScanResult(response);
+
+    let resourceIds = this.convertResourcesResponseToIds(response);
+
+    // after first evaluation runs, evaluate the request evalution if it exists
+    resourceIds = await filterAsync(resourceIds, async resource => {
+      if (isRequestEvaluation(this.evaluation)) {
+        return await everyAsync(this.evaluation.request, async r => {
+          const response = await this.sendRequest(target, resource, r);
+          if (r.query === QueryOption.EXISTS) {
+            return response.parsedBody.length > 0;
+          } else {
+            return JMESPath.search(response.parsedBody, r.query);
+          }
+        });
+      } else {
+        return true;
+      }
+    });
+    return this.toScanResult(resourceIds);
   }
 
   static async getNonExistingResourceGroups(target: ResourceGraphTarget) {
@@ -77,19 +108,143 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
   getQueryByGroups(groupNames: string[]) {
     const formattedGroups = groupNames.map(name => `'${name}'`).join(', ');
     const groupQuery = `| where resourceGroup in~ (${formattedGroups})`;
-    const firstPipeIndex = this.query.indexOf('|');
+    const firstPipeIndex = this.evaluation.query.indexOf('|');
     if (firstPipeIndex === -1) {
       // while it is a Microsoft recommendation to start Resource Graph queries with the table name,
       // for this application it is a requirement in order to support filtering for resource groups in the query
       throw Error("Invalid Query. All queries must start with '<tableName> |'");
     } else {
-      const initalTable = this.query.slice(0, firstPipeIndex - 1);
-      const queryEnding = this.query.slice(firstPipeIndex);
+      const initalTable = this.evaluation.query.slice(0, firstPipeIndex - 1);
+      const queryEnding = this.evaluation.query.slice(firstPipeIndex);
       return `${initalTable} ${groupQuery} ${queryEnding}`;
     }
   }
 
-  toScanResult(response: ResourceGraphModels.ResourcesResponse): ScanResult {
+  async sendRequest(
+    target: ResourceGraphTarget,
+    resourceId: string,
+    request: RequestEvaluationObject
+  ) {
+    if (!isRequestEvaluation(this.evaluation)) {
+      throw Error('A valid request evaluation was not found');
+    }
+    const token = await target.credential.getToken(
+      'https://graph.microsoft.com/.default'
+    );
+    const resourceManagementClient = await this.getResourceManagmentClient(
+      resourceId
+    );
+    const options = {
+      url: await this.getRequestUrl(
+        resourceId,
+        resourceManagementClient,
+        request
+      ),
+      method: request.httpMethod as HttpMethods,
+      headers: {
+        Authorization: `Bearer ${token?.token}`,
+        'Content-Type': 'application/json',
+      },
+    };
+    let response = await resourceManagementClient.sendRequest(options);
+    // if the response returns an error because the default api verison is invalid, then parse the error message to retrieve a valid one and try again
+    if (
+      response.status === 400 &&
+      response.parsedBody.error.code === 'NoRegisteredProviderFound'
+    ) {
+      const apiVersion = this.getApiVersionFromError(
+        response.parsedBody.error.message
+      );
+      options.url = await this.getRequestUrl(
+        resourceId,
+        resourceManagementClient,
+        request,
+        apiVersion
+      );
+      response = await resourceManagementClient.sendRequest(options);
+    }
+    return response;
+  }
+
+  async getResourceManagmentClient(resourceId: string) {
+    const subscriptionId = this.getElementFromId('subscription', resourceId);
+    return await new ResourceManagementClient(
+      new AzureIdentityCredentialAdapter(new DefaultAzureCredential()),
+      subscriptionId
+    );
+  }
+
+  getApiVersionFromError(errorMessage: string) {
+    // splits message so the initial api version that failed is not included in the regex match.
+    const splitMessage = errorMessage.split('The supported api-versions are ');
+    const versions = splitMessage[1];
+    const apiVersions = versions.match(/\d\d\d\d-\d\d-\d\d(-preview)?/g);
+    if (apiVersions) {
+      return apiVersions.sort()[apiVersions.length - 1];
+    }
+    throw Error('Unable to find a valid api version');
+  }
+
+  async getDefaultApiVersion(
+    resourceId: string,
+    client: ResourceManagementClient
+  ) {
+    const provider = this.getElementFromId('provider', resourceId);
+    const resourceType = this.getElementFromId('resourceType', resourceId);
+    const providerResponse = await client.providers.get(provider);
+    const apiVersion = providerResponse.resourceTypes?.find(
+      r => r.resourceType === resourceType
+    )?.defaultApiVersion;
+    return apiVersion;
+  }
+
+  getElementFromId(
+    element: 'subscription' | 'provider' | 'resourceType',
+    resourceId: string
+  ) {
+    if (
+      !resourceId.match(
+        /^(\/subscriptions\/.*\/resourceGroups\/.*\/providers\/.*\/.*)/
+      )
+    ) {
+      throw Error('Invalid resource id');
+    }
+    // splits the id and returns the element
+    const splitId = resourceId.split('/');
+    switch (element) {
+      case 'subscription': {
+        const subscriptionsIdx = splitId.findIndex(
+          el => el === 'subscriptions'
+        );
+        return splitId[subscriptionsIdx + 1];
+      }
+      case 'provider': {
+        const providersIdx = splitId.findIndex(el => el === 'providers');
+        return splitId[providersIdx + 1];
+      }
+      case 'resourceType': {
+        const providersIdx = splitId.findIndex(el => el === 'providers');
+        return splitId[providersIdx + 2];
+      }
+    }
+  }
+
+  async getRequestUrl(
+    resourceId: string,
+    client: ResourceManagementClient,
+    request: RequestEvaluationObject,
+    apiVersion?: string
+  ) {
+    const fullResourceId = `${resourceId}/${request.operation}`;
+    if (!apiVersion) {
+      apiVersion = await this.getDefaultApiVersion(resourceId, client);
+    }
+    return `https://management.azure.com/${fullResourceId}?api-version=${apiVersion}`;
+  }
+
+  convertResourcesResponseToIds(
+    response: ResourceGraphModels.ResourcesResponse
+  ) {
     const cols = response.data.columns as ResourceGraphQueryResponseColumn[];
     const rows = response.data.rows as string[];
     const idIndex = cols.findIndex(c => c.name === 'id');
@@ -97,15 +252,17 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
       throw new Error('Id column was not returned from Azure Resource Graph');
     }
     const resourceIds = rows.map(r => r[idIndex]);
+    return resourceIds;
+  }
+
+  toScanResult(resourceIds: string[]): ScanResult {
     const scanResult: ScanResult = {
       ruleName: this.name,
       description: this.description,
-      total: response.totalRecords,
+      total: resourceIds.length,
+      recommendation: this.recommendation,
       resourceIds,
     };
-    if (this.recommendation) {
-      scanResult.recommendation = this.recommendation;
-    }
     return scanResult;
   }
 }
