@@ -2,7 +2,7 @@ import {expect} from 'chai';
 import {
   HttpMethods,
   isRequestEvaluation,
-  RequestEvaluationObject,
+  Request,
   ResourceGraphRule,
   ResourceGraphTarget,
   RuleType,
@@ -106,7 +106,7 @@ describe('Resource Graph Rule', function () {
     const result = await testRule.sendRequest(
       testTarget,
       resourceId,
-      testRule.evaluation.request[0] as RequestEvaluationObject
+      testRule.evaluation.request[0] as Request
     );
     expect(result.parsedBody.properties).to.include.keys([
       'defaultAction',
@@ -133,7 +133,7 @@ describe('Resource Graph Rule', function () {
     const url = await testRule.getRequestUrl(
       resourceId,
       client,
-      testRule.evaluation.request[0] as RequestEvaluationObject,
+      testRule.evaluation.request[0] as Request,
       apiVersion
     );
     if (isRequestEvaluation(testRule.evaluation)) {
@@ -153,7 +153,7 @@ describe('Resource Graph Rule', function () {
     const url = await testRule.getRequestUrl(
       resourceId,
       client,
-      testRule.evaluation.request[0] as RequestEvaluationObject
+      testRule.evaluation.request[0] as Request
     );
     if (isRequestEvaluation(testRule.evaluation)) {
       expect(url).to.equal(

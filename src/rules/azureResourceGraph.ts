@@ -11,7 +11,7 @@ import {
   HttpMethods,
   filterAsync,
   everyAsync,
-  RequestEvaluationObject,
+  Request,
   QueryOption,
 } from '.';
 import {AzureClient, AzureIdentityCredentialAdapter} from '../azure';
@@ -123,7 +123,7 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
   async sendRequest(
     target: ResourceGraphTarget,
     resourceId: string,
-    request: RequestEvaluationObject
+    request: Request
   ) {
     if (!isRequestEvaluation(this.evaluation)) {
       throw Error('A valid request evaluation was not found');
@@ -232,7 +232,7 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
   async getRequestUrl(
     resourceId: string,
     client: ResourceManagementClient,
-    request: RequestEvaluationObject,
+    request: Request,
     apiVersion?: string
   ) {
     const fullResourceId = `${resourceId}/${request.operation}`;

@@ -11,7 +11,7 @@ import {
   isAndEvaluation,
   HttpMethods,
   filterAsync,
-  RequestEvaluationObject,
+  Request,
   everyAsync,
 } from '.';
 import {AzureIdentityCredentialAdapter} from '../azure';
@@ -151,7 +151,7 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
   async sendRequest(
     target: ARMTarget,
     resource: ARMResource,
-    request: RequestEvaluationObject
+    request: Request
   ) {
     if (!isRequestEvaluation(this.evaluation)) {
       throw Error('A valid request evaluation was not found');
@@ -170,11 +170,7 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
     return await target.client.sendRequest(options);
   }
 
-  getRequestUrl(
-    target: ARMTarget,
-    resource: ARMResource,
-    request: RequestEvaluationObject
-  ) {
+  getRequestUrl(target: ARMTarget, resource: ARMResource, request: Request) {
     return `https://management.azure.com/subscriptions/${target.subscriptionId}/resourceGroups/${target.groupName}/providers/${resource.type}/${resource.name}/${request.operation}?api-version=${resource.apiVersion}`;
   }
 

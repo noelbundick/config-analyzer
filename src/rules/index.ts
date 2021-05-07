@@ -34,10 +34,10 @@ type AndEvaluation = BaseEvaluation & {
 };
 
 export type RequestEvaluation = BaseEvaluation & {
-  request: Array<RequestEvaluationObject>;
+  request: Array<Request>;
 };
 
-export type RequestEvaluationObject = {
+export type Request = {
   operation: string;
   httpMethod: HttpMethods;
   query: string | QueryOption.EXISTS;
