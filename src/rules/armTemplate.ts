@@ -154,10 +154,10 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
     request: RequestEvaluationObject
   ) {
     if (!isRequestEvaluation(this.evaluation)) {
-      throw Error('A valid request evalutation was not found');
+      throw Error('A valid request evaluation was not found');
     }
     const token = await target.credential.getToken(
-      'https://graph.microsoft.com/.default'
+      'https://management.azure.com/.default'
     );
     const options = {
       url: this.getRequestUrl(target, resource, request),

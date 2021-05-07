@@ -129,7 +129,7 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
       throw Error('A valid request evaluation was not found');
     }
     const token = await target.credential.getToken(
-      'https://graph.microsoft.com/.default'
+      'https://management.azure.com/.default'
     );
     const resourceManagementClient = await this.getResourceManagmentClient(
       resourceId
