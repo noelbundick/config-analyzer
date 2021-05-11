@@ -6,7 +6,6 @@ import {
   ARMTarget,
   ARMTemplateRule,
   filterAsync,
-  HttpMethods,
   Request,
   RuleType,
 } from '../../../src/rules';
@@ -168,7 +167,7 @@ describe('ARM Template Rule', () => {
       request: [
         {
           query: '',
-          httpMethod: HttpMethods.POST,
+          httpMethod: 'POST',
           operation: 'path/for/operation',
         },
       ],
