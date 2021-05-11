@@ -1,6 +1,7 @@
 import {ResourceGraphModels} from '@azure/arm-resourcegraph';
 import {ResourceManagementClient} from '@azure/arm-resources';
 import {DefaultAzureCredential, TokenCredential} from '@azure/identity';
+import {HttpMethods} from '@azure/core-http';
 import JMESPath = require('jmespath');
 
 import {
@@ -8,7 +9,6 @@ import {
   RuleType,
   Evaluation,
   isRequestEvaluation,
-  HttpMethods,
   filterAsync,
   everyAsync,
   Request,

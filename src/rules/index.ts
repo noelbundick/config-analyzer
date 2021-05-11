@@ -1,13 +1,7 @@
 import {ScanResult} from '../scanner';
 import {ARMTarget, ARMTemplateRule} from './armTemplate';
 import {ResourceGraphRule, ResourceGraphTarget} from './azureResourceGraph';
-
-// needed for sendRequest method
-// from @azure/core-http => https://azuresdkdocs.blob.core.windows.net/$web/javascript/azure-core-http/1.2.4/globals.html#httpmethods
-export enum HttpMethods {
-  POST = 'POST',
-  GET = 'GET',
-}
+import {HttpMethods} from '@azure/core-http';
 
 export enum RuleType {
   ResourceGraph = 'ResourceGraph',

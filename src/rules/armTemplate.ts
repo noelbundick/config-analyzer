@@ -1,5 +1,6 @@
 import {ResourceManagementClient} from '@azure/arm-resources';
 import {TokenCredential} from '@azure/identity';
+import {HttpMethods} from '@azure/core-http';
 import JMESPath = require('jmespath');
 import Handlebars = require('handlebars');
 
@@ -9,7 +10,6 @@ import {
   Evaluation,
   isRequestEvaluation,
   isAndEvaluation,
-  HttpMethods,
   filterAsync,
   Request,
   everyAsync,
