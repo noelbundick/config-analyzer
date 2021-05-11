@@ -1,5 +1,6 @@
 import {ResourceManagementClient} from '@azure/arm-resources';
 import {TokenCredential} from '@azure/identity';
+import {HttpMethods} from '@azure/core-http';
 import JMESPath = require('jmespath');
 import Handlebars = require('handlebars');
 
@@ -9,9 +10,8 @@ import {
   Evaluation,
   isRequestEvaluation,
   isAndEvaluation,
-  HttpMethods,
   filterAsync,
-  RequestEvaluationObject,
+  Request,
   everyAsync,
 } from '.';
 import {AzureIdentityCredentialAdapter} from '../azure';
@@ -151,13 +151,13 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
   async sendRequest(
     target: ARMTarget,
     resource: ARMResource,
-    request: RequestEvaluationObject
+    request: Request
   ) {
     if (!isRequestEvaluation(this.evaluation)) {
-      throw Error('A valid request evalutation was not found');
+      throw Error('A valid request evaluation was not found');
     }
     const token = await target.credential.getToken(
-      'https://graph.microsoft.com/.default'
+      'https://management.azure.com/.default'
     );
     const options = {
       url: this.getRequestUrl(target, resource, request),
@@ -170,11 +170,7 @@ export class ARMTemplateRule implements BaseRule<ARMTarget> {
     return await target.client.sendRequest(options);
   }
 
-  getRequestUrl(
-    target: ARMTarget,
-    resource: ARMResource,
-    request: RequestEvaluationObject
-  ) {
+  getRequestUrl(target: ARMTarget, resource: ARMResource, request: Request) {
     return `https://management.azure.com/subscriptions/${target.subscriptionId}/resourceGroups/${target.groupName}/providers/${resource.type}/${resource.name}/${request.operation}?api-version=${resource.apiVersion}`;
   }
 

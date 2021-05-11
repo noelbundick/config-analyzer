@@ -54,6 +54,7 @@
   "dependencies": {
     "@azure/arm-resourcegraph": "^3.0.0",
     "@azure/arm-resources": "^4.0.0",
+    "@azure/core-http": "^1.2.4",
     "@azure/identity": "^1.2.3",
     "@azure/ms-rest-js": "^2.2.3",
     "@oclif/command": "^1.8.0",

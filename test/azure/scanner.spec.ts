@@ -3,7 +3,6 @@ import {Scanner} from '../../src/scanner';
 import {runIntegrationTests, subscriptionId} from '.';
 import {ResourceGraphTarget, RuleType} from '../../src/rules';
 import {DefaultAzureCredential} from '@azure/identity';
-import {getTestRules} from '..';
 
 describe('Scanner', function () {
   this.slow(5000);
@@ -20,7 +19,7 @@ describe('Scanner', function () {
       credential: new DefaultAzureCredential(),
     };
     const scanner = new Scanner();
-    const rules = await getTestRules();
+    const rules = await scanner.getRulesFromFile('./test/rules.json');
     const totalResourceGraphRules = rules.filter(
       r => r.type === RuleType.ResourceGraph
     ).length;

@@ -1,8 +1,7 @@
 import {expect} from 'chai';
 import {
-  HttpMethods,
   isRequestEvaluation,
-  RequestEvaluationObject,
+  Request,
   ResourceGraphRule,
   ResourceGraphTarget,
   RuleType,
@@ -33,7 +32,7 @@ describe('Resource Graph Rule', function () {
       request: [
         {
           operation: 'networkRuleSets/default',
-          httpMethod: HttpMethods.GET,
+          httpMethod: 'GET',
           query:
             'properties.defaultAction == `Deny` && length(properties.ipRules) == `0` && length(properties.virtualNetworkRules) == `0`',
         },
@@ -106,7 +105,7 @@ describe('Resource Graph Rule', function () {
     const result = await testRule.sendRequest(
       testTarget,
       resourceId,
-      testRule.evaluation.request[0] as RequestEvaluationObject
+      testRule.evaluation.request[0] as Request
     );
     expect(result.parsedBody.properties).to.include.keys([
       'defaultAction',
@@ -133,7 +132,7 @@ describe('Resource Graph Rule', function () {
     const url = await testRule.getRequestUrl(
       resourceId,
       client,
-      testRule.evaluation.request[0] as RequestEvaluationObject,
+      testRule.evaluation.request[0] as Request,
       apiVersion
     );
     if (isRequestEvaluation(testRule.evaluation)) {
@@ -153,7 +152,7 @@ describe('Resource Graph Rule', function () {
     const url = await testRule.getRequestUrl(
       resourceId,
       client,
-      testRule.evaluation.request[0] as RequestEvaluationObject
+      testRule.evaluation.request[0] as Request
     );
     if (isRequestEvaluation(testRule.evaluation)) {
       expect(url).to.equal(
@@ -175,7 +174,7 @@ describe('Resource Graph Rule', function () {
         request: [
           {
             operation: 'networkRuleSets/default',
-            httpMethod: HttpMethods.GET,
+            httpMethod: 'GET',
             query:
               'properties.defaultAction == `Deny` && length(properties.ipRules) == `0` && length(properties.virtualNetworkRules) == `0`',
           },
@@ -204,7 +203,7 @@ describe('Resource Graph Rule', function () {
         request: [
           {
             operation: 'networkRuleSets/default',
-            httpMethod: HttpMethods.GET,
+            httpMethod: 'GET',
             query:
               'properties.defaultAction == `Allow` && (length(properties.ipRules) > `0` || length(properties.virtualNetworkRules) > `0`)',
           },
@@ -236,12 +235,12 @@ describe('Resource Graph Rule', function () {
         request: [
           {
             operation: 'virtualNetworkConnections',
-            httpMethod: HttpMethods.GET,
+            httpMethod: 'GET',
             query: 'exists',
           },
           {
             operation: 'config/appsettings/list',
-            httpMethod: HttpMethods.POST,
+            httpMethod: 'POST',
             query:
               "properties.WEBSITE_DNS_SERVER != '168.63.129.16' || properties.WEBSITE_VNET_ROUTE_ALL != '1'",
           },

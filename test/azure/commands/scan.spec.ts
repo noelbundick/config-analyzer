@@ -6,8 +6,8 @@ import {
   runIntegrationTests,
   subscriptionId,
 } from '..';
-import {getTestRules} from '../..';
 import {RuleType} from '../../../src/rules';
+import {Scanner} from '../../../src/scanner';
 
 describe('Scan Integration Tests', function () {
   this.slow(3000);
@@ -32,7 +32,8 @@ describe('Scan Integration Tests', function () {
     .it(
       'runs scan:rg --subscription [subscriptionId] -f ./test/rules.json',
       async ({stdout}) => {
-        const rules = await getTestRules();
+        const scanner = new Scanner();
+        const rules = await scanner.getRulesFromFile('./test/rules.json');
         const totalResourceGraphRules = rules.filter(
           r => r.type === RuleType.ResourceGraph
         ).length;

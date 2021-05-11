@@ -6,8 +6,7 @@ import {
   ARMTarget,
   ARMTemplateRule,
   filterAsync,
-  HttpMethods,
-  RequestEvaluationObject,
+  Request,
   RuleType,
 } from '../../../src/rules';
 import {ResourceManagementClient} from '@azure/arm-resources';
@@ -168,7 +167,7 @@ describe('ARM Template Rule', () => {
       request: [
         {
           query: '',
-          httpMethod: HttpMethods.POST,
+          httpMethod: 'POST',
           operation: 'path/for/operation',
         },
       ],
@@ -176,7 +175,7 @@ describe('ARM Template Rule', () => {
     const result = rule.getRequestUrl(
       testARMTarget,
       template.resources[0],
-      evaluation.request[0] as RequestEvaluationObject
+      evaluation.request[0] as Request
     );
     const expectedResult = `https://management.azure.com/subscriptions/${testARMTarget.subscriptionId}/resourceGroups/${testARMTarget.groupName}/providers/${template.resources[0].type}/${template.resources[0].name}/${evaluation.request[0].operation}?api-version=${template.resources[0].apiVersion}`;
     expect(result).to.equal(expectedResult);

@@ -1,6 +1,7 @@
 import {ResourceGraphModels} from '@azure/arm-resourcegraph';
 import {ResourceManagementClient} from '@azure/arm-resources';
 import {DefaultAzureCredential, TokenCredential} from '@azure/identity';
+import {HttpMethods} from '@azure/core-http';
 import JMESPath = require('jmespath');
 
 import {
@@ -8,10 +9,9 @@ import {
   RuleType,
   Evaluation,
   isRequestEvaluation,
-  HttpMethods,
   filterAsync,
   everyAsync,
-  RequestEvaluationObject,
+  Request,
   QueryOption,
 } from '.';
 import {AzureClient, AzureIdentityCredentialAdapter} from '../azure';
@@ -123,13 +123,13 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
   async sendRequest(
     target: ResourceGraphTarget,
     resourceId: string,
-    request: RequestEvaluationObject
+    request: Request
   ) {
     if (!isRequestEvaluation(this.evaluation)) {
       throw Error('A valid request evaluation was not found');
     }
     const token = await target.credential.getToken(
-      'https://graph.microsoft.com/.default'
+      'https://management.azure.com/.default'
     );
     const resourceManagementClient = await this.getResourceManagmentClient(
       resourceId
@@ -166,9 +166,9 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
     return response;
   }
 
-  async getResourceManagmentClient(resourceId: string) {
-    const subscriptionId = this.getElementFromId('subscription', resourceId);
-    return await new ResourceManagementClient(
+  getResourceManagmentClient(resourceId: string) {
+    const subscriptionId = this.getIdElement(resourceId, 'subscriptionId');
+    return new ResourceManagementClient(
       new AzureIdentityCredentialAdapter(new DefaultAzureCredential()),
       subscriptionId
     );
@@ -189,8 +189,8 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
     resourceId: string,
     client: ResourceManagementClient
   ) {
-    const provider = this.getElementFromId('provider', resourceId);
-    const resourceType = this.getElementFromId('resourceType', resourceId);
+    const provider = this.getIdElement(resourceId, 'provider');
+    const resourceType = this.getIdElement(resourceId, 'resourceType');
     const providerResponse = await client.providers.get(provider);
     const apiVersion = providerResponse.resourceTypes?.find(
       r => r.resourceType === resourceType
@@ -198,41 +198,28 @@ export class ResourceGraphRule implements BaseRule<ResourceGraphTarget> {
     return apiVersion;
   }
 
-  getElementFromId(
-    element: 'subscription' | 'provider' | 'resourceType',
-    resourceId: string
+  getIdElement(
+    resourceId: string,
+    element:
+      | 'subscriptionId'
+      | 'provider'
+      | 'resourcegroup'
+      | 'resourceType'
+      | 'name'
   ) {
-    if (
-      !resourceId.match(
-        /^(\/subscriptions\/.*\/resourceGroups\/.*\/providers\/.*\/.*)/
-      )
-    ) {
-      throw Error('Invalid resource id');
-    }
-    // splits the id and returns the element
-    const splitId = resourceId.split('/');
-    switch (element) {
-      case 'subscription': {
-        const subscriptionsIdx = splitId.findIndex(
-          el => el === 'subscriptions'
-        );
-        return splitId[subscriptionsIdx + 1];
-      }
-      case 'provider': {
-        const providersIdx = splitId.findIndex(el => el === 'providers');
-        return splitId[providersIdx + 1];
-      }
-      case 'resourceType': {
-        const providersIdx = splitId.findIndex(el => el === 'providers');
-        return splitId[providersIdx + 2];
-      }
+    const regex = /\/subscriptions\/(?<subscriptionId>.*)\/resourceGroups\/(?<resourceGroup>.*)\/providers\/(?<provider>.*)\/(?<resourceType>.*)\/(?<name>.*)/;
+    const match = regex.exec(resourceId)?.groups?.[element];
+    if (match) {
+      return match;
+    } else {
+      throw Error(`The Resource Id '${resourceId}' is invalid`);
     }
   }
 
   async getRequestUrl(
     resourceId: string,
     client: ResourceManagementClient,
-    request: RequestEvaluationObject,
+    request: Request,
     apiVersion?: string
   ) {
     const fullResourceId = `${resourceId}/${request.operation}`;
