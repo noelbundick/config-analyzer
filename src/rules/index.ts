@@ -1,6 +1,7 @@
 import {ScanResult} from '../scanner';
 import {ARMTarget, ARMTemplateRule} from './armTemplate';
 import {ResourceGraphRule, ResourceGraphTarget} from './azureResourceGraph';
+import {TerraformRule, TerraformTarget} from './terraform';
 
 // needed for sendRequest method
 // from @azure/core-http => https://azuresdkdocs.blob.core.windows.net/$web/javascript/azure-core-http/1.2.4/globals.html#httpmethods
@@ -12,6 +13,7 @@ export enum HttpMethods {
 export enum RuleType {
   ResourceGraph = 'ResourceGraph',
   ARM = 'ARM',
+  Terraform = 'Terraform',
 }
 
 export interface BaseRule<T> {
@@ -89,8 +91,9 @@ export async function everyAsync<T>(
 }
 
 export type Evaluation = BaseEvaluation | AndEvaluation | RequestEvaluation;
-export type Rule = ResourceGraphRule | ARMTemplateRule;
-export type Target = ResourceGraphTarget | ARMTarget;
+export type Rule = ResourceGraphRule | ARMTemplateRule | TerraformRule;
+export type Target = ResourceGraphTarget | ARMTarget | TerraformTarget;
 
 export * from './armTemplate';
 export * from './azureResourceGraph';
+export * from './terraform';

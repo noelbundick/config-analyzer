@@ -6,6 +6,8 @@ import {
   RuleType,
   ARMTemplateRule,
   ARMTarget,
+  TerraformRule,
+  TerraformTarget,
 } from './rules';
 import {promises as fsPromises} from 'fs';
 import * as path from 'path';
@@ -42,6 +44,9 @@ export class Scanner {
         case RuleType.ARM:
           r = new ARMTemplateRule(r);
           return r.execute(target as ARMTarget);
+        case RuleType.Terraform:
+          r = new TerraformRule(r);
+          return r.execute(target as TerraformTarget);
       }
     });
   }
