@@ -14,11 +14,13 @@
     "type": "ResourceGraph",
     "evaluation": {
       "query": "Resources | where type=~ 'Microsoft.EventHub/namespaces'",
-      "request": [{
-        "operation": "networkRuleSets/default",
-        "httpMethod": "GET",
-        "query": "properties.defaultAction == `Deny` && length(properties.ipRules) == `0` && length(properties.virtualNetworkRules) == `0`"
-      }]
+      "request": [
+        {
+          "operation": "networkRuleSets/default",
+          "httpMethod": "GET",
+          "query": "properties.defaultAction == `Deny` && length(properties.ipRules) == `0` && length(properties.virtualNetworkRules) == `0`"
+        }
+      ]
     },
     "recommendation": "https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#event-hubs-not-locked-down-1"
   },
@@ -28,11 +30,13 @@
     "type": "ResourceGraph",
     "evaluation": {
       "query": "Resources | where type=~ 'Microsoft.EventHub/namespaces'",
-      "request": [{
-        "operation": "networkRuleSets/default",
-        "httpMethod": "GET",
-        "query": "properties.defaultAction == `Allow` && (length(properties.ipRules) > `0` || length(properties.virtualNetworkRules) > `0`)"
-      }]
+      "request": [
+        {
+          "operation": "networkRuleSets/default",
+          "httpMethod": "GET",
+          "query": "properties.defaultAction == `Allow` && (length(properties.ipRules) > `0` || length(properties.virtualNetworkRules) > `0`)"
+        }
+      ]
     },
     "recommendation": "https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#event-hubs-not-locked-down-2"
   },
@@ -50,11 +54,11 @@
           "query": "exists"
         },
         {
-        "operation": "config/appsettings/list",
-        "httpMethod": "POST",
-        "query": "properties.WEBSITE_DNS_SERVER != '168.63.129.16' || properties.WEBSITE_VNET_ROUTE_ALL != '1'"
-      }
-    ]
+          "operation": "config/appsettings/list",
+          "httpMethod": "POST",
+          "query": "properties.WEBSITE_DNS_SERVER != '168.63.129.16' || properties.WEBSITE_VNET_ROUTE_ALL != '1'"
+        }
+      ]
     }
   },
   {
@@ -96,14 +100,30 @@
     "recommendation": "https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#function-app-vnet-integration-misconfiguration",
     "evaluation": {
       "query": "type == 'Microsoft.Web/sites' && kind == 'functionapp'",
-      "request": [{
-        "operation": "config/appsettings/list",
-        "httpMethod": "POST",
-        "query": "properties.WEBSITE_DNS_SERVER != '168.63.129.16' || properties.WEBSITE_VNET_ROUTE_ALL != '1'"
-      }],
+      "request": [
+        {
+          "operation": "config/appsettings/list",
+          "httpMethod": "POST",
+          "query": "properties.WEBSITE_DNS_SERVER != '168.63.129.16' || properties.WEBSITE_VNET_ROUTE_ALL != '1'"
+        }
+      ],
       "and": [
         {
           "query": "type == 'Microsoft.Web/sites/virtualNetworkConnections' && starts_with(name, '{{parent.name}}/')"
+        }
+      ]
+    }
+  },
+  {
+    "name": "accidental-public-storage",
+    "description": "Finds Storage Accounts with a Private Endpoint configured but the public endpoint is still enabled",
+    "type": "Terraform",
+    "recommendation": "https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#accidental-public-storage",
+    "evaluation": {
+      "query": "planned_values.root_module.resources[?type == 'azurerm_storage_account' && values.network_rules[0].default_action != 'Deny']",
+      "and": [
+        {
+          "query": "configuration.root_module.resources[?type == 'azurerm_private_endpoint' && expressions.private_service_connection[0].private_connection_resource_id.references[?contains(@, `{{parent.address}}`)]]"
         }
       ]
     }
