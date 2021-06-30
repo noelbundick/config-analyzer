@@ -7,8 +7,10 @@ import {ScanResult} from '../scanner';
 
 export interface TerraformTarget {
   type: RuleType.Terraform;
-  plan: TerraformResource[];
+  plan: TerraformPlan;
 }
+
+type TerraformPlan = unknown;
 
 export interface TerraformResource {
   address: string;
@@ -51,7 +53,7 @@ export class TerraformRule implements BaseRule<TerraformTarget> {
 
   evaluate(
     evaluation: Evaluation,
-    plan: TerraformResource[],
+    plan: TerraformPlan,
     parent?: TerraformResource
   ): Array<TerraformResource> {
     const query = this.render(evaluation.query, parent);
