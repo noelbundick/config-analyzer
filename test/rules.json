@@ -37,5 +37,19 @@
     "description": "mocks a multiple rule system",
     "type": "Dummy",
     "context": {}
+  },
+  {
+    "name": "accidental-public-storage",
+    "description": "Finds Storage Accounts with a Private Endpoint configured but the public endpoint is still enabled",
+    "type": "Terraform",
+    "recommendation": "https://github.com/noelbundick/config-analyzer/blob/main/docs/built-in-rules.md#accidental-public-storage",
+    "evaluation": {
+      "query": "planned_values.root_module.resources[?type == 'azurerm_storage_account' && values.network_rules[0].default_action != 'Deny']",
+      "and": [
+        {
+          "query": "configuration.root_module.resources[?type == 'azurerm_private_endpoint' && expressions.private_service_connection[0].private_connection_resource_id.references[?contains(@, `{{parent.address}}`)]]"
+        }
+      ]
+    }
   }
 ]

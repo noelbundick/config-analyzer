@@ -13,6 +13,7 @@ Azure Configuration Analyzer
 # Usage
 
 <!-- usage -->
+
 ```sh-session
 $ npm install -g azca
 $ azca COMMAND
@@ -24,13 +25,35 @@ USAGE
   $ azca COMMAND
 ...
 ```
+
 <!-- usagestop -->
 
 # Commands
 
 <!-- commands -->
-* [`azca scan:arm`](#azca-scanarm)
-* [`azca scan:rg`](#azca-scanrg)
+
+- [`azca scan`](#azca-scan)
+- [`azca scan:arm`](#azca-scanarm)
+- [`azca scan:rg`](#azca-scanrg)
+- [`azca scan:tf`](#azca-scantf)
+
+## `azca scan`
+
+Command to scan Azure Resources for potential configuration issues
+
+```
+USAGE
+  $ azca scan
+
+OPTIONS
+  -d, --debug      prints debugging logs
+  -f, --file=file  JSON rules file path
+  -v, --verbose    prints all results
+
+EXAMPLE
+  $ azca scan:rg --subscription <subscriptionId>
+  $ azca scan:arm --subscription <subscriptionId> --group <resourceGroupName>
+```
 
 ## `azca scan:arm`
 
@@ -50,7 +73,7 @@ OPTIONS
 EXAMPLE
   $ azca scan:arm --subscription <subscriptionId> --group <resourceGroupName>
        [rule-name]
-           [✓ | ❌][rule-description]     
+           [✓ | ❌][rule-description]
            Resources:
                    [resource-ids]
 
@@ -77,13 +100,40 @@ OPTIONS
 EXAMPLE
   $ azca scan:rg --subscription <subscriptionId>
        [rule-name]
-           [✓ | ❌][rule-description]     
+           [✓ | ❌][rule-description]
            Resources:
                    [resource-ids]
        [total-passing]
        [total-failing]
        [total-rules-scanned]
 ```
+
+## `azca scan:tf`
+
+Scans Terrform JSON plan file for potential configuration issues
+
+```
+USAGE
+  $ azca scan:tf
+
+OPTIONS
+  -d, --debug      prints debugging logs
+  -f, --file=file  JSON rules file path
+  -p, --plan=plan  JSON terraform plan file to evaluate
+  -v, --verbose    prints all results
+
+EXAMPLE
+  $ azca scan:tf --plan <terraformJsonPlanFilePath>
+       [rule-name]
+           [✓ | ❌][rule-description]
+           Resources:
+                   [resource-address]
+
+       [total-passing]
+       [total-failing]
+       [total-rules-scanned]
+```
+
 <!-- commandsstop -->
 
 # Development
